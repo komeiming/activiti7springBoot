@@ -176,6 +176,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh, View } from '@element-plus/icons-vue'
+import { useRoute } from 'vue-router'
 import ProcessDefinitionService from '../services/ProcessDefinitionService'
 import UserService from '../services/UserService'
 
@@ -186,6 +187,9 @@ export default {
     View
   },
   setup() {
+    // 获取路由
+    const route = useRoute()
+    
     // 响应式数据
     const loading = ref(false)
     const processInstances = ref([])
@@ -323,25 +327,34 @@ export default {
       drawerVisible.value = true
       
       try {
-        // 加载流程变量
-        const variablesResponse = await ProcessDefinitionService.getProcessInstanceVariables(process.processInstanceId)
-        processVariables.value = variablesResponse.data || {}
+        // 加载流程变量 - 直接使用返回值，不再访问.data
+        const variables = await ProcessDefinitionService.getProcessInstanceVariables(process.processInstanceId)
+        processVariables.value = variables || {}
         
         // 加载流程历史活动
         const activitiesResponse = await ProcessDefinitionService.getProcessInstanceHistory(process.processInstanceId)
         // 处理不同的返回格式
-        processActivities.value = []
+        let activities = []
         
         if (activitiesResponse && activitiesResponse.data && Array.isArray(activitiesResponse.data)) {
           // 格式1: { data: [] }
-          processActivities.value = activitiesResponse.data
+          activities = activitiesResponse.data
         } else if (activitiesResponse && Array.isArray(activitiesResponse)) {
           // 格式2: []
-          processActivities.value = activitiesResponse
+          activities = activitiesResponse
         } else if (activitiesResponse && activitiesResponse.data && activitiesResponse.data.data && Array.isArray(activitiesResponse.data.data)) {
           // 格式3: { data: { data: [] } }
-          processActivities.value = activitiesResponse.data.data
+          activities = activitiesResponse.data.data
         }
+        
+        // 按照开始时间对活动进行排序，确保流程历史按照时间顺序显示
+        activities.sort((a, b) => {
+          const timeA = new Date(a.startTime || 0).getTime()
+          const timeB = new Date(b.startTime || 0).getTime()
+          return timeA - timeB // 按时间升序排列
+        })
+        
+        processActivities.value = activities
       } catch (error) {
         ElMessage.error('获取流程详情失败')
         console.error('获取流程详情失败:', error)
@@ -540,10 +553,46 @@ export default {
       }
     }
     
+    // 处理URL中的processInstanceId参数
+    const handleUrlProcessInstanceId = async () => {
+      const processInstanceId = route.query.processInstanceId
+      if (processInstanceId) {
+        try {
+          // 根据processInstanceId获取流程实例详情
+          const process = await ProcessDefinitionService.getProcessInstance(processInstanceId)
+          if (process) {
+            // 映射流程实例数据
+            const mappedProcess = {
+              processInstanceId: process.id || process.processInstanceId,
+              processDefinitionId: process.processDefinitionId,
+              processDefinitionKey: process.processDefinitionKey,
+              processDefinitionName: process.processDefinitionName,
+              name: process.processDefinitionName,
+              businessKey: process.businessKey,
+              startTime: process.startTime,
+              endTime: process.endTime,
+              startUser: process.startUserId,
+              status: process.isActive !== undefined ? (process.isActive ? 'active' : 'completed') : process.status,
+              originalData: process
+            }
+            // 查看流程详情
+            await viewProcessDetails(mappedProcess)
+          } else {
+            ElMessage.error('获取流程实例详情失败')
+          }
+        } catch (error) {
+          console.error('处理URL参数失败:', error)
+          ElMessage.error('处理流程实例ID失败')
+        }
+      }
+    }
+    
     // 组件挂载时初始化
     onMounted(async () => {
       await getUserInfo()
       await loadProcessInstances()
+      // 处理URL中的processInstanceId参数
+      await handleUrlProcessInstanceId()
     })
     
     return {

@@ -274,11 +274,25 @@ const loadApprovalData = async () => {
         
         // 获取任务详情，包含变量
         const taskDetail = await TaskService.getTaskDetail(task.id);
-        // 处理不同格式的任务详情响应
-        const detailData = taskDetail.task || taskDetail;
-        const taskVariables = detailData.variables || taskDetail.variables || {};
-        
         console.log('任务详情:', taskDetail);
+        
+        // 处理不同格式的任务详情响应，添加更健壮的错误处理
+        let taskVariables = {};
+        if (taskDetail) {
+            // 情况1: taskDetail包含task字段，task字段包含variables字段
+            if (taskDetail.task && taskDetail.task.variables) {
+                taskVariables = taskDetail.task.variables;
+            }
+            // 情况2: taskDetail包含variables字段
+            else if (taskDetail.variables) {
+                taskVariables = taskDetail.variables;
+            }
+            // 情况3: taskDetail本身是变量数据
+            else if (typeof taskDetail === 'object' && !taskDetail.task) {
+                taskVariables = taskDetail;
+            }
+        }
+        
         console.log('任务变量:', taskVariables);
         
         // 从任务变量中获取申请人信息
@@ -372,16 +386,31 @@ const loadApprovalData = async () => {
         
         // 获取第一个任务的详情，包含变量
         const firstTaskDetail = await TaskService.getTaskDetail(firstTask.id);
-        // 处理不同格式的任务详情响应
-        const firstDetailData = firstTaskDetail.task || firstTaskDetail;
-        const taskVariables = firstDetailData.variables || firstTaskDetail.variables || {};
+        console.log('第一个任务的详情:', firstTaskDetail);
         
-        // 设置审批内容
-        approvalContent.taskId = firstTask.id;
-        approvalContent.taskName = firstTask.name;
-        approvalContent.processName = firstTask.processDefinitionName || '';
-        approvalContent.createTime = firstTask.createTime;
-        approvalContent.assignee = firstTask.assignee || '';
+        // 处理不同格式的任务详情响应，添加更健壮的错误处理
+        let taskVariables = {};
+        if (firstTaskDetail) {
+            // 情况1: firstTaskDetail包含task字段，task字段包含variables字段
+            if (firstTaskDetail.task && firstTaskDetail.task.variables) {
+                taskVariables = firstTaskDetail.task.variables;
+            }
+            // 情况2: firstTaskDetail包含variables字段
+            else if (firstTaskDetail.variables) {
+                taskVariables = firstTaskDetail.variables;
+            }
+            // 情况3: firstTaskDetail本身是变量数据
+            else if (typeof firstTaskDetail === 'object' && !firstTaskDetail.task) {
+                taskVariables = firstTaskDetail;
+            }
+        }
+        
+        // 设置审批内容，添加防御性编程
+        approvalContent.taskId = firstTask.id || '';
+        approvalContent.taskName = firstTask.name || '未知任务';
+        approvalContent.processName = firstTask.processDefinitionName || '未知流程';
+        approvalContent.createTime = firstTask.createTime || '';
+        approvalContent.assignee = firstTask.assignee || '未知处理人';
         approvalContent.variables = taskVariables;
         
         console.log('审批内容:', approvalContent);

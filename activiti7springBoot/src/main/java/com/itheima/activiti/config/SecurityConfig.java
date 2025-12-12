@@ -7,6 +7,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import com.itheima.activiti.config.JwtAuthenticationFilter;
+import com.itheima.activiti.util.JwtUtil;
+import com.itheima.activiti.service.TenantService;
 
 /**
  * Spring Security配置类
@@ -15,6 +19,15 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final JwtUtil jwtUtil;
+    private final TenantService tenantService;
+
+    // 构造函数注入JwtUtil和TenantService
+    public SecurityConfig(JwtUtil jwtUtil, TenantService tenantService) {
+        this.jwtUtil = jwtUtil;
+        this.tenantService = tenantService;
+    }
 
     /**
      * 配置安全过滤链
@@ -28,6 +41,8 @@ public class SecurityConfig {
             .cors(cors -> cors.disable())
             // 设置会话管理为无状态（不使用会话）
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // 添加JWT认证过滤器
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, tenantService), UsernamePasswordAuthenticationFilter.class)
             // 配置请求授权规则 - 允许所有请求
             .authorizeHttpRequests(auth -> auth
                 .anyRequest().permitAll()

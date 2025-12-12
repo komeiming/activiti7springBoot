@@ -129,8 +129,18 @@ class TaskService {
       
       console.log('任务详情API响应:', response)
       
+      // 处理响应数据，支持多种格式
+      // 情况1: response是直接返回的数据（axios拦截器处理后的响应）
+      if (response) {
+        // 情况1.1: response是对象，直接返回
+        if (typeof response === 'object') {
+          return response;
+        }
+      }
+      
+      // 情况2: response是完整的axios响应对象（包含data字段）
       if (response && response.data) {
-        // 检查是否为标准格式（带有code字段）
+        // 情况2.1: 检查是否为标准格式（带有code字段）
         if (response.data.code !== undefined) {
           if (response.data.code === 200) {
             // 标准格式：{code: 200, data: {task: {...}, variables: {...}}}
@@ -140,23 +150,23 @@ class TaskService {
             return {}
           }
         }
-        // 情况1: 响应是CommonResponse格式，包含success和data字段
-        else if (response && response.success !== undefined) {
-          if (response.success) {
-            // 情况1.1: data字段是对象，包含task、variables等字段
-            if (response.data && typeof response.data === 'object') {
-              return response.data
+        // 情况2.2: 检查是否为CommonResponse格式，包含success和data字段
+        else if (response.data.success !== undefined) {
+          if (response.data.success) {
+            // 情况2.2.1: data字段是对象，包含task、variables等字段
+            if (response.data.data && typeof response.data.data === 'object') {
+              return response.data.data
             }
-            // 情况1.2: data字段直接是任务详情
+            // 情况2.2.2: data字段直接是任务详情
             else {
-              return response.data
+              return response.data.data || response.data
             }
           } else {
-            console.error('任务详情API返回失败:', response.message)
+            console.error('任务详情API返回失败:', response.data.message)
             return {}
           }
         }
-        // 情况2: 响应直接是任务详情对象
+        // 情况2.3: 响应直接是任务详情对象
         else if (typeof response.data === 'object') {
           return response.data
         }
@@ -871,8 +881,22 @@ class TaskService {
       // 返回前端组件期望的数据格式
       return processedData;
     } catch (error) {
+      // 处理错误，避免将错误信息直接暴露给用户
       console.error('获取流程实例历史失败:', error)
-      // 返回空数组，让前端组件能够正常显示
+      
+      // 检查是否是权限错误
+      const isPermissionError = error.response && error.response.status === 403 || 
+                                (error.response && error.response.data && 
+                                 (error.response.data.message === '没有权限查看该流程实例的历史活动' ||
+                                  error.response.data.error === '没有权限查看该流程实例的历史活动' ||
+                                  error.response.data.message?.includes('权限') ||
+                                  error.response.data.error?.includes('权限')))
+      
+      if (isPermissionError) {
+        console.info('没有权限查看该流程实例的历史活动，返回空列表')
+      }
+      
+      // 返回空数组，让前端组件能够正常显示，而不是显示错误
       return [];
     }
   }

@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,11 +109,25 @@ public class ProcessInstanceController {
             String currentUser = authentication.getName();
             boolean isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()) || "admin".equals(currentUser));
+            // 添加部门经理角色检查 - 检查所有经理角色
+            boolean isManager = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> {
+                        String authority = auth.getAuthority();
+                        return authority.equals("ROLE_MANAGER") || 
+                               authority.equals("ROLE_DEV_MANAGER") ||
+                               authority.equals("ROLE_TEST_MANAGER") ||
+                               authority.equals("ROLE_OPS_MANAGER") ||
+                               authority.equals("ROLE_SALES_MANAGER") ||
+                               authority.equals("ROLE_MARKET_MANAGER") ||
+                               authority.equals("ROLE_HR_MANAGER") ||
+                               authority.equals("ROLE_FINANCE_MANAGER");
+                    });
 
             ProcessInstance processInstance = processDefinitionService.getProcessInstanceById(processInstanceId);
             HistoricProcessInstance historicProcessInstance = null;
             
-            boolean hasPermission = isAdmin;
+            // 管理员和部门经理可以查看所有流程实例
+            boolean hasPermission = isAdmin || isManager;
             
             if (processInstance == null) {
                 // 尝试从历史流程实例中查询
@@ -121,8 +136,8 @@ public class ProcessInstanceController {
                     return CommonResponse.notFound("流程实例不存在");
                 }
                 
-                // 检查权限：如果不是管理员，只能查看自己发起或参与的流程
-                if (!isAdmin) {
+                // 检查权限：如果不是管理员和部门经理，只能查看自己发起或参与的流程
+                if (!isAdmin && !isManager) {
                     // 1. 检查是否是流程发起人
                     if (currentUser.equals(historicProcessInstance.getStartUserId())) {
                         hasPermission = true;
@@ -134,8 +149,8 @@ public class ProcessInstanceController {
                     }
                 }
             } else {
-                // 检查权限：如果不是管理员，只能查看自己发起或参与的流程
-                if (!isAdmin) {
+                // 检查权限：如果不是管理员和部门经理，只能查看自己发起或参与的流程
+                if (!isAdmin && !isManager) {
                     // 1. 检查是否是流程发起人
                     if (currentUser.equals(processInstance.getStartUserId())) {
                         hasPermission = true;
@@ -260,17 +275,52 @@ public class ProcessInstanceController {
      */
     @GetMapping("/active")
     public CommonResponse<Map<String, Object>> getActiveProcessInstances(
-            @RequestParam String userId,
+            @RequestParam(required = false) String userId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
             logger.info("获取用户活跃流程实例，userId: {}, page: {}, size: {}", userId, page, size);
 
+            // 获取当前登录用户信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUser = authentication.getName();
+            // 如果userId为空，使用当前登录用户的用户名作为默认值
             if (userId == null || userId.trim().isEmpty()) {
-                return CommonResponse.fail("用户ID不能为空");
+                userId = currentUser;
             }
 
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()) || "admin".equals(currentUser));
+            boolean isManagerOrHR = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> {
+                        String authority = auth.getAuthority();
+                        return authority.equals("ROLE_MANAGER") || 
+                               authority.equals("ROLE_DEV_MANAGER") ||
+                               authority.equals("ROLE_TEST_MANAGER") ||
+                               authority.equals("ROLE_OPS_MANAGER") ||
+                               authority.equals("ROLE_SALES_MANAGER") ||
+                               authority.equals("ROLE_MARKET_MANAGER") ||
+                               authority.equals("ROLE_HR_MANAGER") ||
+                               authority.equals("ROLE_FINANCE_MANAGER") ||
+                               authority.equals("ROLE_HR");
+                    });
+
             Map<String, Object> result = processDefinitionService.getActiveProcessInstancesByUserId(userId, page, size);
+            
+            // 如果不是管理员或部门经理/HR，只返回当前用户发起的流程实例
+            if (!isAdmin && !isManagerOrHR) {
+                List<Map<String, Object>> filteredData = new ArrayList<>();
+                if (result.get("data") instanceof List) {
+                    for (Map<String, Object> instance : (List<Map<String, Object>>) result.get("data")) {
+                        if (userId.equals(instance.get("startUserId"))) {
+                            filteredData.add(instance);
+                        }
+                    }
+                }
+                result.put("data", filteredData);
+                result.put("total", filteredData.size());
+            }
+            
             return CommonResponse.success(result);
         } catch (Exception e) {
             logger.error("获取活跃流程实例失败:", e);
@@ -283,17 +333,52 @@ public class ProcessInstanceController {
      */
     @GetMapping("/completed")
     public CommonResponse<Map<String, Object>> getCompletedProcessInstances(
-            @RequestParam String userId,
+            @RequestParam(required = false) String userId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
             logger.info("获取用户已完成流程实例，userId: {}, page: {}, size: {}", userId, page, size);
 
+            // 获取当前登录用户信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUser = authentication.getName();
+            // 如果userId为空，使用当前登录用户的用户名作为默认值
             if (userId == null || userId.trim().isEmpty()) {
-                return CommonResponse.fail("用户ID不能为空");
+                userId = currentUser;
             }
 
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()) || "admin".equals(currentUser));
+            boolean isManagerOrHR = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> {
+                        String authority = auth.getAuthority();
+                        return authority.equals("ROLE_MANAGER") || 
+                               authority.equals("ROLE_DEV_MANAGER") ||
+                               authority.equals("ROLE_TEST_MANAGER") ||
+                               authority.equals("ROLE_OPS_MANAGER") ||
+                               authority.equals("ROLE_SALES_MANAGER") ||
+                               authority.equals("ROLE_MARKET_MANAGER") ||
+                               authority.equals("ROLE_HR_MANAGER") ||
+                               authority.equals("ROLE_FINANCE_MANAGER") ||
+                               authority.equals("ROLE_HR");
+                    });
+
             Map<String, Object> result = processDefinitionService.getCompletedProcessInstancesByUserId(userId, page, size);
+            
+            // 如果不是管理员或部门经理/HR，只返回当前用户发起的流程实例
+            if (!isAdmin && !isManagerOrHR) {
+                List<Map<String, Object>> filteredData = new ArrayList<>();
+                if (result.get("data") instanceof List) {
+                    for (Map<String, Object> instance : (List<Map<String, Object>>) result.get("data")) {
+                        if (userId.equals(instance.get("startUserId"))) {
+                            filteredData.add(instance);
+                        }
+                    }
+                }
+                result.put("data", filteredData);
+                result.put("total", filteredData.size());
+            }
+            
             return CommonResponse.success(result);
         } catch (Exception e) {
             logger.error("获取已完成流程实例失败:", e);
@@ -329,8 +414,22 @@ public class ProcessInstanceController {
                 }
             }
             
-            // 2. 检查权限：管理员可以查看所有流程，普通用户只能查看自己发起或参与的流程
-            if (!isAdmin) {
+            // 2. 检查权限：管理员、部门经理、HR可以查看所有流程，普通用户只能查看自己发起或参与的流程
+            boolean isManagerOrHR = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> {
+                        String authority = auth.getAuthority();
+                        return authority.equals("ROLE_MANAGER") || 
+                               authority.equals("ROLE_DEV_MANAGER") ||
+                               authority.equals("ROLE_TEST_MANAGER") ||
+                               authority.equals("ROLE_OPS_MANAGER") ||
+                               authority.equals("ROLE_SALES_MANAGER") ||
+                               authority.equals("ROLE_MARKET_MANAGER") ||
+                               authority.equals("ROLE_HR_MANAGER") ||
+                               authority.equals("ROLE_FINANCE_MANAGER") ||
+                               authority.equals("ROLE_HR");
+                    });
+            
+            if (!isAdmin && !isManagerOrHR) {
                 boolean hasPermission = false;
                 
                 // 检查是否是流程发起人

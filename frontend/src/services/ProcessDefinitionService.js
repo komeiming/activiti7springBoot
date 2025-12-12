@@ -556,7 +556,8 @@ class ProcessDefinitionService {
     try {
       console.log(`[ProcessDefinitionService] 获取流程定义图片: ${processDefinitionId}`)
       
-      // 设置responseType为blob，确保正确处理二进制图片数据
+      // 重新设置responseType为blob，确保能正确处理二进制图片数据
+      // 同时处理可能的JSON错误响应
       const response = await axios.get(`/api/process/definition/${processDefinitionId}/diagram`, {
         responseType: 'blob' // 明确指定响应类型为blob
       })
@@ -566,8 +567,16 @@ class ProcessDefinitionService {
       
       return new Promise((resolve, reject) => {
         reader.onload = () => {
-          console.log('[ProcessDefinitionService] 流程图转换成功')
-          resolve(reader.result)
+          // 检查是否是有效的图片数据
+          const result = reader.result
+          if (result && typeof result === 'string' && result.startsWith('data:image/')) {
+            console.log('[ProcessDefinitionService] 流程图转换成功')
+            resolve(result)
+          } else {
+            // 可能是JSON格式的错误响应被转换为blob
+            console.info('[ProcessDefinitionService] 非图片数据，可能是错误信息')
+            resolve(null)
+          }
         }
         reader.onerror = (e) => {
           console.error('[ProcessDefinitionService] 图片转换失败:', e)
@@ -576,59 +585,13 @@ class ProcessDefinitionService {
         reader.readAsDataURL(response.data)
       })
     } catch (error) {
-      // 详细记录错误信息，方便调试，但使用不同的日志级别
-      if (error.response) {
-        // 1. 404错误 - 请求的资源不存在（预期的正常情况）
-        if (error.response.status === 404) {
-          console.info('[ProcessDefinitionService] 流程图不存在(404)，返回空状态，这是正常情况')
-          console.info('[ProcessDefinitionService] 错误详情:', {
-            status: error.response.status,
-            statusText: error.response.statusText,
-            data: typeof error.response.data === 'string' ? error.response.data : '二进制数据'
-          })
-          return null;
-        }
-        
-        // 2. 其他HTTP错误（非404）
-        console.error('[ProcessDefinitionService] 获取流程图失败(HTTP错误):', {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: typeof error.response.data === 'string' ? error.response.data : '二进制数据'
-        })
-      } else {
-        // 3. 网络错误或其他类型的错误
-        console.error('[ProcessDefinitionService] 获取流程图失败:', error)
+      // 只记录404和已知错误，不记录其他错误，减少控制台输出
+      if (error.response && error.response.status === 404) {
+        console.info('[ProcessDefinitionService] 流程图不存在(404)，返回空状态，这是正常情况')
+      } else if (error.response && error.response.status >= 200 && error.response.status < 300) {
+        // 成功状态码但解析失败，可能是格式问题
+        console.info('[ProcessDefinitionService] 流程图获取成功但解析失败，返回空状态')
       }
-      
-      // 检查错误消息中是否包含特定的错误信息
-      let errorMessage = ''
-      
-      // 情况1: error.response.data是字符串
-      if (error.response && typeof error.response.data === 'string') {
-        errorMessage = error.response.data
-      }
-      // 情况2: error.response.data是对象
-      else if (error.response && typeof error.response.data === 'object') {
-        errorMessage = error.response.data.message || error.response.data.error || JSON.stringify(error.response.data)
-      }
-      // 情况3: error.message是字符串
-      else if (error.message) {
-        errorMessage = error.message
-      }
-      
-      // 检查错误消息是否包含特定的错误信息
-      const isKnownError = errorMessage.includes('流程定义没有关联的流程图资源') || 
-                         errorMessage.includes('Activiti不会自动生成流程图') || 
-                         errorMessage.includes('请求的资源不存在') ||
-                         errorMessage.includes('404 Not Found') ||
-                         errorMessage.includes('Not Found')
-      
-      if (isKnownError) {
-        console.info('[ProcessDefinitionService] 已知错误类型，返回空状态')
-      } else {
-        console.info('[ProcessDefinitionService] 未知错误，返回空状态')
-      }
-      
       // 对于所有错误情况，都返回null，让前端显示空状态，而不是抛出错误
       return null
     }
@@ -777,11 +740,11 @@ class ProcessDefinitionService {
       }
       
       console.log('[ProcessDefinitionService] 准备请求活跃流程实例:', {
-        url: '/v1/process-instances/active',
+        url: '/api/v1/process-instances/active',
         params
       });
       
-      const response = await axios.get('/v1/process-instances/active', { params });
+      const response = await axios.get('/api/v1/process-instances/active', { params });
       console.log('[ProcessDefinitionService] 活跃流程实例API响应状态:', response.status);
       console.log('[ProcessDefinitionService] 活跃流程实例API响应数据:', JSON.stringify(response, null, 2));
       
@@ -841,11 +804,11 @@ class ProcessDefinitionService {
       }
       
       console.log('[ProcessDefinitionService] 准备请求已完成流程实例:', {
-        url: '/v1/process-instances/completed',
+        url: '/api/v1/process-instances/completed',
         params
       });
       
-      const response = await axios.get('/v1/process-instances/completed', { params });
+      const response = await axios.get('/api/v1/process-instances/completed', { params });
       console.log('[ProcessDefinitionService] 已完成流程实例API响应状态:', response.status);
       console.log('[ProcessDefinitionService] 已完成流程实例API响应数据:', JSON.stringify(response, null, 2));
       
@@ -890,38 +853,15 @@ class ProcessDefinitionService {
   async getProcessInstanceVariables(processInstanceId) {
     try {
       console.log('[ProcessDefinitionService] 获取流程实例变量:', processInstanceId)
-      const response = await axios.get(`/v1/process-instances/${processInstanceId}/variables`)
+      const response = await axios.get(`/api/v1/process-instances/${processInstanceId}/variables`)
       
-      // 兼容不同的响应格式 - 与axios响应拦截器行为保持一致
-      let variables = {}
-      
-      if (typeof response === 'object' && response) {
-        // 情况1: response直接是对象，检查是否有success字段
-        if (response.success !== undefined) {
-          if (response.success) {
-            variables = response.data || {}
-          }
-        }
-        // 情况2: response是对象，包含data字段，检查data是否有success字段
-        else if (response.data && typeof response.data === 'object') {
-          if (response.data.success !== undefined) {
-            if (response.data.success) {
-              variables = response.data.data || {}
-            }
-          } else {
-            // 情况2.1: response.data是对象，但没有success字段，直接使用data
-            variables = response.data || {}
-          }
-        }
-        // 情况3: response是对象，直接使用response作为变量（axios拦截器直接返回变量数据）
-        else {
-          variables = response || {}
-        }
-      }
-      
-      return variables
+      // 直接返回响应结果，axios拦截器已经处理了CommonResponse格式
+      return response || {}
     } catch (error) {
-      console.error('[ProcessDefinitionService] 获取流程实例变量失败:', error)
+      // 确保错误信息不包含null
+      const errorMsg = error.message || error.toString() || '未知错误'
+      console.error('[ProcessDefinitionService] 获取流程实例变量失败:', errorMsg)
+      // 错误情况下返回空对象，让前端正常显示
       return {}
     }
   }
@@ -930,39 +870,54 @@ class ProcessDefinitionService {
   async getProcessInstanceHistory(processInstanceId) {
     try {
       console.log('[ProcessDefinitionService] 获取流程实例历史:', processInstanceId)
-      const response = await axios.get(`/v1/process-instances/${processInstanceId}/history`)
+      const response = await axios.get(`/api/v1/process-instances/${processInstanceId}/history`)
       
       // 兼容不同的响应格式 - 与axios响应拦截器行为保持一致
       let history = { data: [] }
       
       if (typeof response === 'object' && response) {
-        // 情况1: response直接是对象，检查是否有success字段
-        if (response.success !== undefined) {
-          if (response.success) {
-            history = response
-          }
-        }
-        // 情况2: response是对象，包含data字段，检查data是否有success字段
-        else if (response.data && typeof response.data === 'object') {
-          if (response.data.success !== undefined) {
-            if (response.data.success) {
-              history = response.data
-            }
-          } else {
-            // 情况2.1: response.data是对象，但没有success字段，直接使用data
-            history = response.data
-          }
-        }
-        // 情况3: response是对象，直接使用data
-        else {
-          history = response.data || { data: [] }
+        // 直接使用response，axios拦截器已经处理了CommonResponse格式
+        // 确保返回格式包含data数组
+        if (Array.isArray(response)) {
+          // 响应直接是数组
+          history = { data: response }
+        } else if (response.data && Array.isArray(response.data)) {
+          // 响应包含data数组
+          history = response
+        } else {
+          // 其他情况，使用默认格式
+          history = { data: [] }
         }
       }
       
       return history
     } catch (error) {
-      console.error('[ProcessDefinitionService] 获取流程实例历史失败:', error)
+      // 确保错误信息不包含null
+      const errorMsg = error.message || error.toString() || '未知错误'
+      console.error('[ProcessDefinitionService] 获取流程实例历史失败:', errorMsg)
       return { data: [] }
+    }
+  }
+  
+  // 根据processInstanceId获取流程实例详情
+  async getProcessInstance(processInstanceId) {
+    try {
+      console.log('[ProcessDefinitionService] 获取流程实例详情:', processInstanceId)
+      const response = await axios.get(`/api/v1/process-instances/${processInstanceId}`)
+      
+      // 兼容不同的响应格式 - 与axios响应拦截器行为保持一致
+      let result = null
+      
+      if (typeof response === 'object' && response) {
+        // 由于axios拦截器已经处理了CommonResponse格式，直接返回的是data内容
+        result = response
+      }
+      
+      console.log('[ProcessDefinitionService] 流程实例详情:', result)
+      return result
+    } catch (error) {
+      console.error('[ProcessDefinitionService] 获取流程实例详情失败:', error)
+      return null
     }
   }
 
@@ -1057,7 +1012,7 @@ class ProcessDefinitionService {
   // 删除流程实例
   async deleteProcessInstance(processInstanceId, deleteReason = '删除') {
     try {
-      const response = await axios.delete(`/v1/process-instances/${processInstanceId}`, {
+      const response = await axios.delete(`/api/v1/process-instances/${processInstanceId}`, {
         params: { deleteReason }
       })
       
@@ -1093,7 +1048,7 @@ class ProcessDefinitionService {
   // 终止流程实例 (使用删除API)
   async terminateProcessInstance(processInstanceId, terminateReason = '终止') {
     try {
-      const response = await axios.delete(`/v1/process-instances/${processInstanceId}`, {
+      const response = await axios.delete(`/api/v1/process-instances/${processInstanceId}`, {
         params: { deleteReason: terminateReason }
       })
       

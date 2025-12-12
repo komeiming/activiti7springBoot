@@ -148,12 +148,19 @@ public class TaskController {
                 .anyMatch(auth -> 
                     "ROLE_MANAGER".equals(auth.getAuthority()) || 
                     "ROLE_DEPT_MANAGER".equals(auth.getAuthority()) || 
+                    "ROLE_DEV_MANAGER".equals(auth.getAuthority()) ||
+                    "ROLE_TEST_MANAGER".equals(auth.getAuthority()) ||
+                    "ROLE_OPS_MANAGER".equals(auth.getAuthority()) ||
+                    "ROLE_SALES_MANAGER".equals(auth.getAuthority()) ||
+                    "ROLE_MARKET_MANAGER".equals(auth.getAuthority()) ||
+                    "ROLE_HR_MANAGER".equals(auth.getAuthority()) ||
+                    "ROLE_FINANCE_MANAGER".equals(auth.getAuthority()) ||
                     "dept_manager".equals(auth.getAuthority()));
                 
             // 处理部门经理权限
             if (isDeptManager || "dept_manager".equals(currentUser)) {
-                // 部门经理可以查看分配给自己的任务或部门经理组的候选任务
-                taskQuery.taskCandidateGroup("dept_manager").or().taskAssignee(currentUser).endOr();
+                // 部门经理可以查看分配给自己的任务
+                taskQuery.taskAssignee(currentUser);
                 logger.info("部门经理{}查询任务列表", currentUser);
             } else {
                 // 普通用户只能查询自己的任务
@@ -228,7 +235,21 @@ public class TaskController {
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                 String username = authentication.getName();
                 
-                if (task.getAssignee() == null || task.getAssignee().equals(username)) {
+                // 检查用户是否拥有部门经理角色或是否是dept_manager用户
+                boolean isDeptManager = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> 
+                        "ROLE_MANAGER".equals(auth.getAuthority()) || 
+                        "ROLE_DEPT_MANAGER".equals(auth.getAuthority()) || 
+                        "ROLE_DEV_MANAGER".equals(auth.getAuthority()) ||
+                        "ROLE_TEST_MANAGER".equals(auth.getAuthority()) ||
+                        "ROLE_OPS_MANAGER".equals(auth.getAuthority()) ||
+                        "ROLE_SALES_MANAGER".equals(auth.getAuthority()) ||
+                        "ROLE_MARKET_MANAGER".equals(auth.getAuthority()) ||
+                        "ROLE_HR_MANAGER".equals(auth.getAuthority()) ||
+                        "ROLE_FINANCE_MANAGER".equals(auth.getAuthority()) ||
+                        "dept_manager".equals(auth.getAuthority()));
+                
+                if (task.getAssignee() == null || task.getAssignee().equals(username) || isDeptManager) {
                     // 从请求体中提取variables
                     Map<String, Object> variables = new HashMap<>();
                     

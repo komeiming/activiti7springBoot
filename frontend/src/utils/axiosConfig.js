@@ -166,7 +166,13 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   response => {
-    // 对响应数据进行处理
+    // 特殊处理 blob 类型响应（用于流程图等二进制数据）
+    if (response.config.responseType === 'blob' || response.data instanceof Blob) {
+      // 直接返回完整的 response 对象，不处理 data 字段
+      return response
+    }
+    
+    // 对非 blob 类型响应数据进行处理
     const res = response.data
     
     // 检查响应状态 - 允许200和201状态码通过
@@ -209,6 +215,9 @@ service.interceptors.response.use(
     // 检查是否是流程图请求
     const isDiagramRequest = error.config && error.config.url && error.config.url.includes('/diagram')
     
+    // 检查是否是blob类型响应
+    const isBlobResponse = error.config && error.config.responseType === 'blob' || error.response && error.response.data instanceof Blob
+    
     // 处理网络错误
     if (!error.response) {
       if (!isDiagramRequest) {
@@ -226,7 +235,12 @@ service.interceptors.response.use(
       
       if (isTenantLoginRequest || isApiRequest) {
         // 租户登录请求或API请求，不清除用户信息，不跳转，返回具体错误信息
-        const errorMsg = error.response.data.message || '请求失败，请检查您的权限或配置'
+        let errorMsg = '请求失败，请检查您的权限或配置'
+        // 只有非blob响应才能尝试访问message属性
+        if (!isBlobResponse && error.response.data) {
+          // 确保message不是null或undefined
+          errorMsg = error.response.data.message || '请求失败，请检查您的权限或配置'
+        }
         ElMessage.error(errorMsg)
         const enhancedError = new Error(errorMsg)
         enhancedError.response = error.response
@@ -275,7 +289,12 @@ service.interceptors.response.use(
     }
     
     // 处理其他错误 - 不在这里显示错误消息，让调用组件决定如何显示
-    const errorMsg = error.response.data.message || '请求失败'
+    let errorMsg = '请求失败'
+    // 只有非blob响应才能尝试访问message属性
+    if (!isBlobResponse && error.response.data) {
+      // 确保message不是null或undefined
+      errorMsg = error.response.data.message || '请求失败'
+    }
     const enhancedError = new Error(errorMsg)
     enhancedError.response = error.response
     enhancedError.responseData = error.response.data

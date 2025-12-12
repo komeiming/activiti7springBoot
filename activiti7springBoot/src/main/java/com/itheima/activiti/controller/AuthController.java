@@ -139,11 +139,12 @@ public class AuthController {
             Map<String, Object> claims = new HashMap<>();
             claims.put("username", username);
             claims.put("role", role); // 使用优先级最高的角色，已包含ROLE_前缀
+            claims.put("roles", rolesStr); // 存入所有角色信息，用于权限验证
             
             // 使用JwtUtil生成JWT token
             logger.debug("开始生成JWT token...");
             String token = jwtUtil.generateToken(username, claims);
-            logger.debug("JWT token生成成功，角色信息: {}", role);
+            logger.debug("JWT token生成成功，角色信息: {}, 所有角色: {}", role, rolesStr);
 
             // 构建返回数据
             LoginResponse response = new LoginResponse();

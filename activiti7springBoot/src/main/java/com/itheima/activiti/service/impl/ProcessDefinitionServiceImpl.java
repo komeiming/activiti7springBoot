@@ -444,14 +444,12 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     
     // 新增方法：根据用户ID获取活跃的流程实例列表
     public Map<String, Object> getActiveProcessInstancesByUserId(String userId, int page, int pageSize) {
-        // 查询用户发起的活跃流程实例
+        // 直接查询所有活跃流程实例，权限控制在控制器层处理
         long total = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
-                .startedBy(userId)
                 .unfinished()
                 .count();
         
         List<HistoricProcessInstance> processInstances = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
-                .startedBy(userId)
                 .unfinished()
                 .orderByProcessInstanceStartTime().desc()
                 .listPage((page - 1) * pageSize, pageSize);
@@ -478,14 +476,12 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     
     // 新增方法：根据用户ID获取已完成的流程实例列表
     public Map<String, Object> getCompletedProcessInstancesByUserId(String userId, int page, int pageSize) {
-        // 查询指定用户发起的已完成流程实例
+        // 直接查询所有已完成流程实例，权限控制在控制器层处理
         long total = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
-                .startedBy(userId)
                 .finished()
                 .count();
         
         List<HistoricProcessInstance> processInstances = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
-                .startedBy(userId)
                 .finished()
                 .orderByProcessInstanceEndTime().desc()
                 .listPage((page - 1) * pageSize, pageSize);
@@ -553,14 +549,21 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         
         // 如果运行时不存在，从历史记录获取
         // 使用正确的API获取历史流程变量
-        return processEngine.getHistoryService().createHistoricVariableInstanceQuery()
+        List<HistoricVariableInstance> historicVariables = processEngine.getHistoryService()
+                .createHistoricVariableInstanceQuery()
                 .processInstanceId(processInstanceId)
-                .list()
-                .stream()
-                .collect(Collectors.toMap(
-                        variableInstance -> variableInstance.getVariableName(),
-                        variableInstance -> variableInstance.getValue()
-                ));
+                .list();
+        
+        // 使用Map来存储每个变量名的最新值
+        Map<String, Object> variablesMap = new HashMap<>();
+        for (HistoricVariableInstance variableInstance : historicVariables) {
+            if (variableInstance.getVariableName() != null) {
+                // 直接覆盖，最后一个值就是最新的（Activiti会按照时间顺序返回）
+                variablesMap.put(variableInstance.getVariableName(), variableInstance.getValue());
+            }
+        }
+        
+        return variablesMap;
     }
     
 }

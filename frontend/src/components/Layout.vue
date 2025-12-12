@@ -111,12 +111,17 @@
           <div class="user-info">
             <span class="user-name">{{ currentUser?.username || '用户' }}</span>
             <div class="user-avatar">
-              <!-- 根据用户角色显示不同的头像 -->
-              <img 
-                :src="getUserAvatar(currentUser?.role)" 
-                alt="用户头像" 
-                class="avatar-img"
-                />
+              <!-- 使用Element Plus的Avatar组件，避免依赖外部服务 -->
+              <el-avatar 
+                :size="32" 
+                :style="{ 
+                  backgroundColor: getAvatarColor(currentUser?.role),
+                  fontSize: '16px',
+                  fontWeight: 'bold'
+                }"
+              >
+                {{ getAvatarText(currentUser?.role || 'user') }}
+              </el-avatar>
             </div>
           </div>
         </div>
@@ -314,9 +319,50 @@ function logout() {
 
 // 根据用户角色获取头像
 function getUserAvatar(role) {
-  // 这里可以根据不同角色返回不同的头像图片
-  // 目前使用默认头像，实际项目中可以替换为真实的头像图片
-  return 'https://picsum.photos/200/200?random=' + (role || 'user')
+  // 使用基于角色名称首字母的纯色头像，避免依赖任何外部服务
+  return '';
+}
+
+// 根据角色获取头像背景颜色
+function getAvatarColor(role) {
+  // 定义角色对应的颜色映射
+  const roleColors = {
+    'ROLE_ADMIN': '#ff4d4f',
+    'ROLE_MANAGER': '#faad14',
+    'ROLE_DEPT_MANAGER': '#faad14',
+    'ROLE_DEV_MANAGER': '#1890ff',
+    'ROLE_TEST_MANAGER': '#52c41a',
+    'ROLE_OPS_MANAGER': '#722ed1',
+    'ROLE_SALES_MANAGER': '#eb2f96',
+    'ROLE_MARKET_MANAGER': '#fa8c16',
+    'ROLE_HR_MANAGER': '#13c2c2',
+    'ROLE_FINANCE_MANAGER': '#ff7875',
+    'ROLE_HR': '#13c2c2',
+    'ROLE_IT': '#1890ff',
+    'ROLE_SENIOR_ARCHITECT': '#722ed1',
+    'ROLE_DEVELOPER': '#52c41a',
+    'ROLE_TESTER': '#faad14',
+    'ROLE_OPS': '#fa8c16',
+    'ROLE_SALES': '#eb2f96',
+    'ROLE_MARKET': '#fa8c16',
+    'ROLE_CTO': '#1890ff',
+    'ROLE_CEO': '#ff4d4f',
+    'ROLE_CFO': '#ff7875',
+    'ROLE_COO': '#faad14'
+  };
+  
+  // 如果没有匹配的角色，使用随机颜色
+  return roleColors[role] || `#${Math.floor(Math.random()*16777215).toString(16)}`;
+}
+
+// 根据角色获取头像显示文本
+function getAvatarText(role) {
+  // 如果角色为空，返回默认值
+  if (!role) return 'U';
+  
+  // 提取角色名称的首字母，转换为大写
+  const roleStr = role.toString();
+  return roleStr.charAt(0).toUpperCase();
 }
 
 // 组件挂载时获取用户信息和菜单
