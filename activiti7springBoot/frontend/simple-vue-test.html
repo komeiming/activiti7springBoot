@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>简单Vue测试</title>
+  <!-- 使用Vite模块系统 -->
+  <script type="module" src="/@vite/client"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+    .login-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .debug-info {
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="login-container">
+      <h1>Login Test</h1>
+      <div class="debug-info">Vue版本: {{ vueVersion }}</div>
+      
+      <form @submit.prevent="handleSubmit">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input id="username" v-model="username" placeholder="Enter username">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" v-model="password" type="password" placeholder="Enter password">
+        </div>
+        <button type="submit">Login</button>
+      </form>
+      
+      <div v-if="message" class="debug-info">
+        {{ message }}
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // 使用ES模块导入
+    import { createApp } from 'vue';
+    
+    const app = createApp({
+      data() {
+        return {
+          username: '',
+          password: '',
+          message: '',
+          vueVersion: 'Vue 3.x (ES模块导入)'
+        }
+      },
+      mounted() {
+        console.log('Vue应用已挂载');
+        console.log('Vue版本: 3.x (ES模块导入)');
+        this.message = 'Vue应用初始化成功';
+      },
+      methods: {
+        handleSubmit() {
+          console.log('提交登录:', this.username, this.password);
+          this.message = `登录信息: ${this.username}`;
+        }
+      }
+    });
+    
+    // 挂载应用
+    app.mount('#app');
+    console.log('应用挂载完成，DOM内容:', document.getElementById('app').innerHTML);
+  </script>
+</body>
+</html>

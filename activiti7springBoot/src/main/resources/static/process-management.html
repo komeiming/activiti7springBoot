@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流程管理 - Activiti 工作流管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <h1>Activiti 工作流管理系统</h1>
+        <div class="user-info">
+            <span id="username-display">用户名</span>
+            <button id="logout-btn" class="logout-btn">退出登录</button>
+        </div>
+    </header>
+
+    <!-- 侧边栏导航 -->
+    <aside class="sidebar">
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">工作流仪表盘</a></li>
+            <li><a href="process-management.html" class="active">流程管理</a></li>
+        </ul>
+    </aside>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+        <!-- 流程引擎信息卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>流程引擎信息</h3>
+            </div>
+            <div class="card-body">
+                <div id="engine-info-container">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BPMN上传卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>上传BPMN文件</h3>
+            </div>
+            <div class="card-body">
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="bpmn-file">选择BPMN文件:</label>
+                        <input type="file" id="bpmn-file" name="file" accept=".bpmn" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">上传并部署</button>
+                </form>
+                <div id="upload-message" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+
+        <!-- 流程定义列表卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>流程定义列表</h3>
+                <div style="margin-top: 10px;">
+                    <button id="refresh-definitions" class="btn btn-primary">刷新列表</button>
+                    <button id="start-process" class="btn btn-secondary" style="margin-left: 10px;">启动流程</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="definitions-container">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 活跃流程实例卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>活跃流程实例</h3>
+            </div>
+            <div class="card-body">
+                <div id="active-instances-container">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 已完成流程实例卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>已完成流程实例</h3>
+            </div>
+            <div class="card-body">
+                <div id="completed-instances-container">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/process-management.js"></script>
+</body>
+</html>

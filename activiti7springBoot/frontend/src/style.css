@@ -1,0 +1,142 @@
+/* 全局样式重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* 默认蓝色主题 */
+  --primary-color: #409eff;
+  --primary-hover: #66b1ff;
+  --primary-active: #3a8ee6;
+  --primary-light: #ecf5ff;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --info-color: #909399;
+  --text-primary: #303133;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-placeholder: #c0c4cc;
+  --border-color: #dcdfe6;
+  --border-light: #e4e7ed;
+  --border-lighter: #ebeef5;
+  --border-extra-light: #f2f6fc;
+  --background-color: #f5f7fa;
+  --background-light: #ffffff;
+  --sidebar-bg: #1e293b;
+  --sidebar-active: #0284c7;
+  --sidebar-hover: #334155;
+  --sidebar-border: #334155;
+  --topbar-bg: #ffffff;
+  --topbar-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 清新绿色主题 */
+[data-theme="green"] {
+  --primary-color: #67c23a;
+  --primary-hover: #85ce61;
+  --primary-active: #5daf34;
+  --primary-light: #f0f9eb;
+  --sidebar-active: #16a34a;
+}
+
+/* 优雅紫色主题 */
+[data-theme="purple"] {
+  --primary-color: #909399;
+  --primary-hover: #a6a9ad;
+  --primary-active: #82848a;
+  --primary-light: #f4f4f5;
+  --sidebar-active: #7c3aed;
+}
+
+/* 活力橙色主题 */
+[data-theme="orange"] {
+  --primary-color: #e6a23c;
+  --primary-hover: #ebb563;
+  --primary-active: #cf9236;
+  --primary-light: #fdf6ec;
+  --sidebar-active: #f97316;
+}
+
+/* 热情红色主题 */
+[data-theme="red"] {
+  --primary-color: #f56c6c;
+  --primary-hover: #f78989;
+  --primary-active: #dd6161;
+  --primary-light: #fef0f0;
+  --sidebar-active: #ef4444;
+}
+
+/* 深色主题 */
+[data-theme="dark"] {
+  --primary-color: #409eff;
+  --primary-hover: #66b1ff;
+  --primary-active: #3a8ee6;
+  --primary-light: #1e3a5f;
+  --text-primary: #e4e7ed;
+  --text-regular: #c0c4cc;
+  --text-secondary: #909399;
+  --text-placeholder: #606266;
+  --border-color: #4e5969;
+  --border-light: #3a4553;
+  --border-lighter: #2d3640;
+  --border-extra-light: #1e293b;
+  --background-color: #121822;
+  --background-light: #1e293b;
+  --sidebar-bg: #121822;
+  --sidebar-active: #0284c7;
+  --sidebar-hover: #334155;
+  --sidebar-border: #334155;
+  --topbar-bg: #1e293b;
+  --topbar-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text-primary);
+  background-color: var(--background-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* 移除默认的Vite样式冲突 */
+h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+/* 基础按钮样式重置，避免与Element Plus冲突 */
+button {
+  font-family: inherit;
+}
+
+/* 确保所有元素都继承主题颜色 */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}

@@ -1,0 +1,128 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Java build files
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Maven
+mvnw
+mvnw.cmd
+.mvn/
+
+# Gradle
+gradlew
+gradlew.bat
+.gradle/
+build/
+
+# Spring Boot
+*.original
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database files
+*.h2.db
+*.mv.db
+*.trace.db
+*.db
+*.sql
+*.sqlite
+
+# Logs
+*.log
+logs/
+log/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.swp
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# OS generated files
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Activiti generated files
+*.bpmn.png
+*.bpmn.svg
+
+# Local development
+backend.log
+lib/
+test-diagram.png
+
+# Package manager
+.npm
+.yarn-integrity
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Local env files
+.env*.local
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
