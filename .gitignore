@@ -61,6 +61,25 @@ build/
 .env.test.local
 .env.production.local
 
+# Database files
+*.h2.db
+*.mv.db
+*.trace.db
+*.db
+*.sql
+*.sqlite
+
+# Logs
+*.log
+logs/
+log/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.swp
+
 # Testing
 coverage/
 .nyc_output/
@@ -80,25 +99,14 @@ Thumbs.db
 .Trashes
 ehthumbs.db
 
-# Database files
-*.db
-*.sql
-*.sqlite
-*.h2.db
-
 # Activiti generated files
 *.bpmn.png
 *.bpmn.svg
 
-# Logs directory
-logs/
-log/
-
-# Backup files
-*.bak
-*.backup
-*.old
-*.swp
+# Local development
+backend.log
+lib/
+test-diagram.png
 
 # Package manager
 .npm
@@ -115,7 +123,6 @@ log/
 .env*.local
 
 # Misc
-*.log
 *.pid
 *.seed
 *.pid.lock

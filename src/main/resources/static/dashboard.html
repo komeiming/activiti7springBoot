@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作流仪表盘 - Activiti 工作流管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <h1>Activiti 工作流管理系统</h1>
+        <div class="user-info">
+            <span id="username-display">用户名</span>
+            <button id="logout-btn" class="logout-btn">退出登录</button>
+        </div>
+    </header>
+
+    <!-- 侧边栏导航 -->
+    <aside class="sidebar">
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html" class="active">工作流仪表盘</a></li>
+            <li id="admin-menu" style="display: none;">
+                <a href="process-management.html">流程管理</a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <h3>我的任务</h3>
+            </div>
+            <div class="card-body">
+                <!-- 任务过滤工具栏 -->
+                <div class="task-filter" style="margin-bottom: 20px;">
+                    <button id="refresh-tasks" class="btn btn-primary">刷新任务</button>
+                </div>
+                
+                <!-- 任务列表 -->
+                <div id="tasks-container">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 任务详情模态框 -->
+        <div id="task-detail-modal" style="
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        ">
+            <div style="
+                background: white;
+                border-radius: 8px;
+                padding: 30px;
+                width: 90%;
+                max-width: 600px;
+                max-height: 80vh;
+                overflow-y: auto;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 id="modal-title">任务详情</h3>
+                    <button id="close-modal" style="
+                        background: none;
+                        border: none;
+                        font-size: 20px;
+                        cursor: pointer;
+                        color: #666;
+                    ">&times;</button>
+                </div>
+                
+                <div id="task-detail-content">
+                    <!-- 任务详情内容将通过JavaScript动态加载 -->
+                </div>
+                
+                <div style="margin-top: 20px; text-align: right;">
+                    <button id="complete-task" class="btn btn-primary">完成任务</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

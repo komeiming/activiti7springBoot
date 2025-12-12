@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itheima.activiti.mapper.TenantMapper">
+    
+    <resultMap id="tenantResultMap" type="com.itheima.activiti.entity.Tenant">
+        <id property="id" column="id" />
+        <result property="appId" column="app_id" />
+        <result property="secretKey" column="secret_key" />
+        <result property="systemName" column="system_name" />
+        <result property="contactName" column="contact_name" />
+        <result property="contactPhone" column="contact_phone" />
+        <result property="contactEmail" column="contact_email" />
+        <result property="enterpriseName" column="enterprise_name" />
+        <result property="enterpriseCreditCode" column="enterprise_credit_code" />
+        <result property="callbackUrl" column="callback_url" />
+        <result property="serviceModules" column="service_modules" />
+        <result property="callScenarios" column="call_scenarios" />
+        <result property="status" column="status" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+        <result property="approvedAt" column="approved_at" />
+        <result property="approvedBy" column="approved_by" />
+        <result property="remark" column="remark" />
+        <result property="role" column="role" />
+    </resultMap>
+    
+    <!-- 插入租户 -->
+    <insert id="insert" parameterType="com.itheima.activiti.entity.Tenant">
+        INSERT INTO tenant (
+            id, app_id, secret_key, system_name, contact_name, contact_phone, 
+            contact_email, enterprise_name, enterprise_credit_code, callback_url, 
+            service_modules, call_scenarios, status, created_at, updated_at,
+            approved_at, approved_by, remark, role
+        ) VALUES (
+            #{id}, #{appId}, #{secretKey}, #{systemName}, #{contactName}, #{contactPhone}, 
+            #{contactEmail}, #{enterpriseName}, #{enterpriseCreditCode}, #{callbackUrl}, 
+            #{serviceModules}, #{callScenarios}, #{status}, #{createdAt}, #{updatedAt}, 
+            #{approvedAt}, #{approvedBy}, #{remark}, #{role}
+        )
+    </insert>
+    
+    <!-- 更新租户 -->
+    <update id="update" parameterType="com.itheima.activiti.entity.Tenant">
+        UPDATE tenant SET
+            app_id = #{appId},
+            secret_key = #{secretKey},
+            system_name = #{systemName},
+            contact_name = #{contactName},
+            contact_phone = #{contactPhone},
+            contact_email = #{contactEmail},
+            enterprise_name = #{enterpriseName},
+            enterprise_credit_code = #{enterpriseCreditCode},
+            callback_url = #{callbackUrl},
+            service_modules = #{serviceModules},
+            call_scenarios = #{callScenarios},
+            status = #{status},
+            updated_at = #{updatedAt},
+            approved_at = #{approvedAt},
+            approved_by = #{approvedBy},
+            remark = #{remark},
+            role = #{role}
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 根据ID查询租户 -->
+    <select id="selectById" parameterType="java.lang.String" resultMap="tenantResultMap">
+        SELECT * FROM tenant WHERE id = #{id}
+    </select>
+    
+    <!-- 根据APP ID查询租户 -->
+    <select id="selectByAppId" parameterType="java.lang.String" resultMap="tenantResultMap">
+        SELECT * FROM tenant WHERE app_id = #{appId}
+    </select>
+    
+    <!-- 根据联系人手机号查询租户 -->
+    <select id="selectByContactPhone" parameterType="java.lang.String" resultMap="tenantResultMap">
+        SELECT * FROM tenant WHERE contact_phone = #{contactPhone}
+    </select>
+    
+    <!-- 根据联系人邮箱查询租户 -->
+    <select id="selectByContactEmail" parameterType="java.lang.String" resultMap="tenantResultMap">
+        SELECT * FROM tenant WHERE contact_email = #{contactEmail}
+    </select>
+    
+    <!-- 查询所有租户 -->
+    <select id="selectAll" resultMap="tenantResultMap">
+        SELECT * FROM tenant ORDER BY created_at DESC
+    </select>
+    
+    <!-- 根据状态查询租户 -->
+    <select id="selectByStatus" parameterType="java.lang.String" resultMap="tenantResultMap">
+        SELECT * FROM tenant WHERE status = #{status} ORDER BY created_at DESC
+    </select>
+</mapper>
