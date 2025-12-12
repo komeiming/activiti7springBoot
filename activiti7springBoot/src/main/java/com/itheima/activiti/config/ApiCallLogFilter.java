@@ -44,15 +44,24 @@ public class ApiCallLogFilter extends OncePerRequestFilter {
         // 排除注册请求和管理员API请求，因为注册时还没有租户信息，管理员API可能不需要记录
         if (requestUri.startsWith("/api/") && !requestUri.startsWith("/api/auth/login") && !requestUri.equals("/api/v1/tenant/register") && !requestUri.startsWith("/api/admin/")) {
             
-            // 包装请求和响应，以便后续读取内容
-            ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request);
-            ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
-            
             long startTime = System.currentTimeMillis();
+            
+            // 检查是否为多部分请求，多部分请求不能使用ContentCachingRequestWrapper
+            boolean isMultipartRequest = request.getContentType() != null && request.getContentType().startsWith("multipart/");
+            
+            HttpServletRequest requestToUse = request;
+            HttpServletResponse responseToUse = response;
+            
+            // 只对非多部分请求进行包装
+            if (!isMultipartRequest) {
+                // 包装请求和响应，以便后续读取内容
+                requestToUse = new ContentCachingRequestWrapper(request);
+                responseToUse = new ContentCachingResponseWrapper(response);
+            }
             
             try {
                 // 继续执行过滤器链
-                filterChain.doFilter(wrappedRequest, wrappedResponse);
+                filterChain.doFilter(requestToUse, responseToUse);
             } finally {
                 long endTime = System.currentTimeMillis();
                 long responseTime = endTime - startTime;
@@ -65,8 +74,20 @@ public class ApiCallLogFilter extends OncePerRequestFilter {
                     apiCallLog.setTenantId(TenantContext.getTenantId());
                     apiCallLog.setApiPath(requestUri);
                     apiCallLog.setRequestMethod(request.getMethod());
-                    apiCallLog.setRequestParams(getRequestPayload(wrappedRequest));
-                    apiCallLog.setResponseData(getResponsePayload(wrappedResponse));
+                    
+                    // 只对非多部分请求获取请求体
+                    if (!isMultipartRequest) {
+                        apiCallLog.setRequestParams(getRequestPayload((ContentCachingRequestWrapper) requestToUse));
+                        apiCallLog.setResponseData(getResponsePayload((ContentCachingResponseWrapper) responseToUse));
+                        
+                        // 确保响应被刷新
+                        ((ContentCachingResponseWrapper) responseToUse).copyBodyToResponse();
+                    } else {
+                        // 对于多部分请求，只记录基本信息，不记录请求体和响应体
+                        apiCallLog.setRequestParams("[Multipart Request]");
+                        apiCallLog.setResponseData("[Multipart Response]");
+                    }
+                    
                     apiCallLog.setResponseTime(responseTime);
                     apiCallLog.setSuccess(response.getStatus() >= 200 && response.getStatus() < 300);
                     apiCallLog.setClientIp(getClientIp(request));
@@ -81,9 +102,6 @@ public class ApiCallLogFilter extends OncePerRequestFilter {
                 } catch (Exception e) {
                     logger.error("记录API调用日志失败:", e);
                 }
-                
-                // 确保响应被刷新
-                wrappedResponse.copyBodyToResponse();
             }
         } else {
             // 非API请求或登录请求或注册请求，直接放行
