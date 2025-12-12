@@ -169,8 +169,8 @@ service.interceptors.response.use(
     // 对响应数据进行处理
     const res = response.data
     
-    // 检查响应状态
-    if (response.status !== 200) {
+    // 检查响应状态 - 允许200和201状态码通过
+    if (response.status !== 200 && response.status !== 201) {
       const errorMsg = res.message || '未知错误'
       // 将错误信息附加到error对象上，但不在这里显示
       const error = new Error('请求失败: ' + errorMsg)

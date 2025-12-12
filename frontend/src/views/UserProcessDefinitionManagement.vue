@@ -241,9 +241,12 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
-import ProcessDefinitionService from '../services/ProcessDefinitionService'
+import ProcessDefinitionServiceClass from '../services/ProcessDefinitionService'
 import UserService from '../services/UserService'
 import ProcessFlowChart from '../components/ProcessFlowChart.vue'
+
+// 创建ProcessDefinitionService实例
+const ProcessDefinitionService = new ProcessDefinitionServiceClass()
 
 export default {
   name: 'UserProcessDefinitionManagement',
@@ -396,8 +399,13 @@ export default {
 
     // 文件变化处理
     const handleFileChange = (file, fileList) => {
-      if (file.raw) {
-        deployForm.file = file.raw
+      // 只保留第一个选中的文件
+      if (fileList && fileList.length > 0) {
+        // 确保使用最新的文件列表中的第一个文件
+        deployForm.file = fileList[0].raw
+      } else {
+        // 如果文件列表为空，清空deployForm.file
+        deployForm.file = null
       }
     }
 
@@ -409,6 +417,7 @@ export default {
       }
 
       try {
+        console.log('开始部署流程，部署名称:', deployForm.name, '文件名:', deployForm.file.name)
         const result = await ProcessDefinitionService.deployProcess(deployForm.file, deployForm.name)
         if (result) {
           ElMessage.success('流程部署成功')
@@ -418,7 +427,9 @@ export default {
           ElMessage.error('流程部署失败')
         }
       } catch (error) {
-        console.error('部署流程错误:', error)
+        console.error('部署流程错误详情:', error)
+        console.error('错误配置:', error.config)
+        console.error('错误响应:', error.response)
         ElMessage.error('流程部署失败: ' + (error.message || '未知错误'))
       }
     }
