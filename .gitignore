@@ -1,0 +1,70 @@
+# Java build files
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Maven
+mvnw
+mvnw.cmd
+.mvn/
+
+# Spring Boot
+*.original
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database files
+*.h2.db
+*.mv.db
+*.trace.db
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.swp
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# OS generated files
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Activiti generated files
+*.bpmn.png
+*.bpmn.svg
+
+# Local development
+backend.log
+lib/
+test-diagram.png
