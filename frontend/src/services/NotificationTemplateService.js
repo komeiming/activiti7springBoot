@@ -4,7 +4,7 @@ class NotificationTemplateService {
   // 获取模板列表
   async getTemplates(params = {}) {
     try {
-      const response = await axios.get('/notification/templates', { params });
+      const response = await axios.get('/api/notification/templates', { params });
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
@@ -16,7 +16,7 @@ class NotificationTemplateService {
   // 获取模板详情
   async getTemplate(id) {
     try {
-      const response = await axios.get(`/notification/templates/${id}`);
+      const response = await axios.get(`/api/notification/templates/${id}`);
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
@@ -28,7 +28,7 @@ class NotificationTemplateService {
   // 创建模板
   async createTemplate(templateData) {
     try {
-      const response = await axios.post('/notification/templates', templateData);
+      const response = await axios.post('/api/notification/templates', templateData);
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
@@ -40,7 +40,7 @@ class NotificationTemplateService {
   // 更新模板
   async updateTemplate(id, templateData) {
     try {
-      const response = await axios.put(`/notification/templates/${id}`, templateData);
+      const response = await axios.put(`/api/notification/templates/${id}`, templateData);
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
@@ -52,7 +52,7 @@ class NotificationTemplateService {
   // 删除模板
   async deleteTemplate(id) {
     try {
-      const response = await axios.delete(`/notification/templates/${id}`);
+      const response = await axios.delete(`/api/notification/templates/${id}`);
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
@@ -64,7 +64,7 @@ class NotificationTemplateService {
   // 启用模板
   async enableTemplate(id) {
     try {
-      const response = await axios.put(`/notification/templates/${id}/enable`);
+      const response = await axios.put(`/api/notification/templates/${id}/enable`);
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
@@ -76,7 +76,7 @@ class NotificationTemplateService {
   // 禁用模板
   async disableTemplate(id) {
     try {
-      const response = await axios.put(`/notification/templates/${id}/disable`);
+      const response = await axios.put(`/api/notification/templates/${id}/disable`);
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
@@ -88,7 +88,7 @@ class NotificationTemplateService {
   // 测试发送邮件
   async testSendEmail(email, subject, content) {
     try {
-      const response = await axios.post('/notification/test/email', {
+      const response = await axios.post('/api/notification/test/email', {
         receiver: email,
         params: {
           subject: subject,
@@ -106,7 +106,7 @@ class NotificationTemplateService {
   // 测试发送短信
   async testSendSms(phone, content) {
     try {
-      const response = await axios.post('/notification/test/sms', {
+      const response = await axios.post('/api/notification/test/sms', {
         receiver: phone,
         params: {
           content: content
@@ -123,7 +123,7 @@ class NotificationTemplateService {
   // 发送通知
   async sendNotification(params) {
     try {
-      const response = await axios.post('/notification/send', params);
+      const response = await axios.post('/api/notification/send', params);
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
@@ -135,7 +135,7 @@ class NotificationTemplateService {
   // 获取通知日志
   async getNotificationLogs(params = {}) {
     try {
-      const response = await axios.get('/notification/logs', { params });
+      const response = await axios.get('/api/notification/logs', { params });
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
@@ -147,7 +147,7 @@ class NotificationTemplateService {
   // 获取模板操作日志
   async getTemplateOperationLogs(params = {}) {
     try {
-      const response = await axios.get('/notification/template-logs', { params });
+      const response = await axios.get('/api/notification/template-logs', { params });
       // 由于axios响应拦截器已经处理了response.data，所以直接返回response
       return response;
     } catch (error) {
