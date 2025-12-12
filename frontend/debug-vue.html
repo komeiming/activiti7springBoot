@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vue应用调试</title>
+  <script type="module" src="/@vite/client"></script>
+</head>
+<body>
+  <h1>Vue应用调试页面</h1>
+  <div id="app"></div>
+  
+  <script type="module">
+    console.log('开始调试Vue应用...');
+    
+    // 直接导入Vue和路由
+    import { createApp } from 'vue';
+    import router from '/src/router/index.js';
+    import App from '/src/App.vue';
+    
+    console.log('Vue模块导入成功');
+    console.log('App组件:', App);
+    console.log('路由配置:', router);
+    
+    // 检查路由是否正确配置了LoginView
+    console.log('路由表:', router.getRoutes());
+    
+    // 创建并挂载应用
+    const app = createApp(App);
+    app.use(router);
+    
+    console.log('应用创建成功，准备挂载');
+    
+    // 挂载前监听路由变化
+    router.beforeEach((to, from, next) => {
+      console.log('路由跳转:', from.path, '->', to.path);
+      next();
+    });
+    
+    // 挂载应用
+    app.mount('#app');
+    console.log('应用已挂载');
+    
+    // 暴露到全局
+    window.vueApp = app;
+    window.vueRouter = router;
+    
+    // 检查DOM
+    setTimeout(() => {
+      console.log('3秒后DOM检查:');
+      console.log('App容器内容:', document.getElementById('app')?.innerHTML);
+      
+      // 手动导航到登录页
+      console.log('手动导航到登录页...');
+      router.push('/login').then(() => {
+        console.log('导航完成，当前路由:', router.currentRoute.value);
+        setTimeout(() => {
+          console.log('导航后DOM检查:', document.getElementById('app')?.innerHTML);
+        }, 1000);
+      });
+    }, 3000);
+  </script>
+</body>
+</html>
