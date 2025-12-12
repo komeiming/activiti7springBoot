@@ -241,12 +241,9 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
-import ProcessDefinitionServiceClass from '../services/ProcessDefinitionService'
+import ProcessDefinitionService from '../services/ProcessDefinitionService'
 import UserService from '../services/UserService'
 import ProcessFlowChart from '../components/ProcessFlowChart.vue'
-
-// 创建ProcessDefinitionService实例
-const ProcessDefinitionService = new ProcessDefinitionServiceClass()
 
 export default {
   name: 'UserProcessDefinitionManagement',
@@ -265,6 +262,9 @@ export default {
     const selectedProcessDefinition = ref(null)
     const processImageUrl = ref('')
     const currentUser = ref({})
+    // 流程节点和连线数据 - 必须在使用前声明
+    const processNodes = ref([])
+    const processLinks = ref([])
 
     // 搜索表单
     const searchForm = reactive({
@@ -715,10 +715,7 @@ export default {
       console.info('生成的流程连线数据:', processLinks.value)
     }
     
-    // 流程节点数据
-    const processNodes = ref([])
-    // 流程连线数据
-    const processLinks = ref([])
+    // 流程节点和连线数据已在顶部声明
 
     // 初始化
     onMounted(() => {

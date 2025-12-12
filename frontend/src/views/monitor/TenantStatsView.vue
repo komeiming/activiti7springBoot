@@ -410,12 +410,12 @@ const handleQuery = async () => {
   loading.value = true
   try {
     // 构建查询参数
-    const params = {
-      startDate: filterForm.timeRange[0] ? filterForm.timeRange[0].toISOString() : '',
-      endDate: filterForm.timeRange[1] ? filterForm.timeRange[1].toISOString() : '',
-      tenantName: filterForm.tenantName,
-      serviceModule: filterForm.serviceModule === 'all' ? '' : filterForm.serviceModule
-    }
+            const params = {
+                startDate: filterForm.timeRange[0] ? filterForm.timeRange[0].toISOString() : undefined,
+                endDate: filterForm.timeRange[1] ? filterForm.timeRange[1].toISOString() : undefined,
+                tenantName: filterForm.tenantName,
+                serviceModule: filterForm.serviceModule === 'all' ? undefined : filterForm.serviceModule
+            }
     
     // 调用后端API获取真实数据
     const response = await MonitorService.getTenantStats(params)
