@@ -19,4 +19,13 @@ public interface NotificationService {
     
     // 替换模板参数
     String replaceTemplateParams(String templateContent, java.util.Map<String, Object> params);
+    
+    // 批量发送通知
+    NotificationResponse sendBatchNotification(NotificationRequest request);
+    
+    // 定时发送通知
+    NotificationResponse sendScheduledNotification(NotificationRequest request);
+    
+    // 重试失败通知
+    NotificationResponse retryFailedNotification(String logId);
 }

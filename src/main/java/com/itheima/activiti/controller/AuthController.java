@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.itheima.activiti.dto.CommonResponse;
 import com.itheima.activiti.dto.LoginRequest;
 import com.itheima.activiti.dto.LoginResponse;
+import com.itheima.activiti.dto.TenantLoginRequest;
 import com.itheima.activiti.entity.SysUser;
+import com.itheima.activiti.service.TenantService;
 import com.itheima.activiti.service.UserService;
 import com.itheima.activiti.util.JwtUtil;
 
@@ -40,6 +42,9 @@ public class AuthController {
     
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private TenantService tenantService;
 
     @Value("${jwt.expiration:3600}")
     private long expiration;
@@ -167,6 +172,59 @@ public class AuthController {
         return CommonResponse.success("登出成功");
     }
 
+    /**
+     * 租户登录
+     */
+    @PostMapping({"/api/auth/tenant/login", "/auth/tenant/login"})
+    public CommonResponse<LoginResponse> tenantLogin(@RequestBody TenantLoginRequest loginRequest) {
+        logger.info("开始处理租户登录请求，APP ID为: {}", loginRequest.getAppId());
+        try {
+            // 验证租户凭证，获取详细验证结果
+            Object[] validateResult = tenantService.validateWithDetails(loginRequest.getAppId(), loginRequest.getSecretKey());
+            boolean isValid = (boolean) validateResult[0];
+            String errorMessage = (String) validateResult[1];
+            
+            if (!isValid) {
+                logger.warn("租户登录失败，原因: {}, APP ID: {}", errorMessage, loginRequest.getAppId());
+                return CommonResponse.unauthorized(errorMessage);
+            }
+            
+            String appId = loginRequest.getAppId();
+            
+            // 获取完整的租户信息
+            com.itheima.activiti.entity.Tenant tenant = tenantService.getByAppId(appId);
+            String role = tenant.getRole();
+            
+            // 生成JWT token，包含租户信息
+            Map<String, Object> claims = new HashMap<>();
+            claims.put("username", appId);
+            claims.put("role", role);
+            
+            // 使用JwtUtil生成JWT token
+            logger.debug("开始生成租户JWT token...");
+            String token = jwtUtil.generateToken(appId, claims);
+            logger.debug("租户JWT token生成成功");
+            
+            // 构建返回数据
+            LoginResponse response = new LoginResponse();
+            response.setToken(token);
+            response.setUsername(appId);
+            response.setRole(role);
+            response.setExpireTime(System.currentTimeMillis() + (expiration * 1000)); // 转换为毫秒
+            response.setServiceModules(tenant.getServiceModules());
+            response.setName(tenant.getSystemName());
+            
+            logger.info("租户登录成功，APP ID: {}, 服务模块: {}", appId, tenant.getServiceModules());
+            
+            // 返回标准的响应数据
+            return CommonResponse.success(response);
+        } catch (Exception e) {
+            logger.error("租户登录失败: {}", e.getMessage());
+            logger.error("异常详情: ", e);
+            return CommonResponse.unauthorized("租户登录失败: " + e.getMessage());
+        }
+    }
+    
     /**
      * 获取当前用户信息
      */

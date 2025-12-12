@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public class NotificationLog {
     
     private String id; // 日志ID
+    private String tenantId; // 租户ID
     private String sendId; // 发送ID（对应响应中的sendId）
     private String templateId; // 模板ID
     private String templateName; // 模板名称
@@ -27,6 +28,14 @@ public class NotificationLog {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getSendId() {

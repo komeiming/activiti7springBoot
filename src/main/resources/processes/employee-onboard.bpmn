@@ -153,8 +153,8 @@
     </sequenceFlow>
   </process>
 
-  <bpmndi:BPMNDiagram id="BPMNDiagram_employeeOnboardProcess">
-    <bpmndi:BPMNPlane bpmnElement="employeeOnboardProcess" id="BPMNPlane_employeeOnboardProcess">
+  <bpmndi:BPMNDiagram id="BPMNDiagram_employeeOnboard">
+    <bpmndi:BPMNPlane bpmnElement="employeeOnboard" id="BPMNPlane_employeeOnboard">
       <bpmndi:BPMNShape bpmnElement="startEvent" id="BPMNShape_startEvent">
         <omgdc:Bounds height="30.0" width="30.0" x="100.0" y="163.0" />
       </bpmndi:BPMNShape>

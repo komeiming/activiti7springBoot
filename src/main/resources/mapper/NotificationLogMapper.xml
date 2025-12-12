@@ -16,11 +16,12 @@
         <result column="error_code" property="errorCode" />
         <result column="error_message" property="errorMessage" />
         <result column="send_time" property="sendTime" />
+        <result column="tenant_id" property="tenantId" />
     </resultMap>
     
     <sql id="Base_Column_List">
         id, send_id, template_id, template_name, type, receiver, params, 
-        sender_system, request_id, success, error_code, error_message, send_time
+        sender_system, request_id, success, error_code, error_message, send_time, tenant_id
     </sql>
     
     <!-- 按条件查询日志 -->
@@ -109,6 +110,9 @@
             <if test="endTime != null">
                 <![CDATA[AND send_time <= #{endTime}]]>
             </if>
+            <if test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </if>
         </where>
     </select>
     
@@ -130,8 +134,8 @@
     
     <!-- 插入日志 -->
     <insert id="insert">
-        INSERT INTO notification_log (id, send_id, template_id, template_name, type, receiver, params, sender_system, request_id, success, error_code, error_message, send_time)
-        VALUES (#{id}, #{sendId}, #{templateId}, #{templateName}, #{type}, #{receiver}, #{params}, #{senderSystem}, #{requestId}, #{success}, #{errorCode}, #{errorMessage}, #{sendTime})
+        INSERT INTO notification_log (id, send_id, template_id, template_name, type, receiver, params, sender_system, request_id, success, error_code, error_message, send_time, tenant_id)
+        VALUES (#{id}, #{sendId}, #{templateId}, #{templateName}, #{type}, #{receiver}, #{params}, #{senderSystem}, #{requestId}, #{success}, #{errorCode}, #{errorMessage}, #{sendTime}, #{tenantId})
     </insert>
     
     <!-- 按条件查询日志 -->
@@ -164,6 +168,9 @@
             <if test="endTime != null">
                 <![CDATA[AND send_time <= #{endTime}]]>
             </if>
+            <if test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </if>
         </where>
         ORDER BY send_time DESC
         <if test="offset != null and limit != null">
@@ -173,10 +180,10 @@
     
     <!-- 批量插入日志 -->
     <insert id="batchInsert">
-        INSERT INTO notification_log (id, send_id, template_id, template_name, type, receiver, params, sender_system, request_id, success, error_code, error_message, send_time)
+        INSERT INTO notification_log (id, send_id, template_id, template_name, type, receiver, params, sender_system, request_id, success, error_code, error_message, send_time, tenant_id)
         VALUES
         <foreach collection="list" item="log" separator=",">
-            (#{log.id}, #{log.sendId}, #{log.templateId}, #{log.templateName}, #{log.type}, #{log.receiver}, #{log.params}, #{log.senderSystem}, #{log.requestId}, #{log.success}, #{log.errorCode}, #{log.errorMessage}, #{log.sendTime})
+            (#{log.id}, #{log.sendId}, #{log.templateId}, #{log.templateName}, #{log.type}, #{log.receiver}, #{log.params}, #{log.senderSystem}, #{log.requestId}, #{log.success}, #{log.errorCode}, #{log.errorMessage}, #{log.sendTime}, #{log.tenantId})
         </foreach>
     </insert>
 </mapper>

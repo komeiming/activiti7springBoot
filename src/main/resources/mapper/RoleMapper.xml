@@ -27,9 +27,9 @@
         WHERE ur.user_id = #{userId}
     </select>
 
-    <insert id="insert" parameterType="com.itheima.activiti.entity.SysRole">
-        INSERT INTO sys_role (name, code, description)
-        VALUES (#{roleName}, #{roleCode}, #{description})
+    <insert id="insert" parameterType="com.itheima.activiti.entity.SysRole" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_role (name, code, description, created_time, updated_time)
+        VALUES (#{roleName}, #{roleCode}, #{description}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     </insert>
 
     <update id="update" parameterType="com.itheima.activiti.entity.SysRole">

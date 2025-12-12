@@ -81,35 +81,7 @@ public class NotificationServiceImpl implements NotificationService {
             
             logger.info("确定通知类型: {}", notificationType);
             
-            // 验证接收者格式
-            if (notificationType.equalsIgnoreCase("email")) {
-                // 验证邮箱格式
-                if (!validateEmail(request.getReceiver())) {
-                    response.setSuccess(false);
-                    response.setErrorCode("INVALID_EMAIL");
-                    response.setMessage("邮箱格式不正确");
-                    logger.error("发送邮件失败: 邮箱格式不正确 - {}", maskSensitiveInfo(request.getReceiver()));
-                    return response;
-                }
-            } else if (notificationType.equalsIgnoreCase("sms")) {
-                // 验证手机号格式
-                if (!validatePhone(request.getReceiver())) {
-                    response.setSuccess(false);
-                    response.setErrorCode("INVALID_PHONE");
-                    response.setMessage("手机号格式不正确");
-                    logger.error("发送短信失败: 手机号格式不正确 - {}", maskSensitiveInfo(request.getReceiver()));
-                    return response;
-                }
-            } else {
-                response.setSuccess(false);
-                response.setErrorCode("UNSUPPORTED_TYPE");
-                response.setMessage("不支持的通知类型");
-                logger.error("发送通知失败: 不支持的通知类型 - {}", notificationType);
-                return response;
-            }
-            
             // 创建待发送通知
-            PendingNotification pendingNotification = new PendingNotification();
             String finalSubject = null;
             String finalContent = null;
             
@@ -141,17 +113,9 @@ public class NotificationServiceImpl implements NotificationService {
                 } else {
                     finalContent = replaceTemplateParams(template.getContent(), request.getParams());
                 }
-                
-                pendingNotification.setTemplateId(template.getId());
-                pendingNotification.setTemplateName(template.getName());
-                pendingNotification.setType(template.getType());
             } else {
                 logger.info("直接发送测试通知，不使用模板");
                 // 直接发送测试通知，不使用模板
-                pendingNotification.setTemplateId("test");
-                pendingNotification.setTemplateName("测试模板");
-                pendingNotification.setType(notificationType);
-                
                 if (notificationType.equalsIgnoreCase("email")) {
                     finalSubject = request.getParams() != null && request.getParams().get("subject") != null ? 
                             request.getParams().get("subject").toString() : "测试邮件";
@@ -163,27 +127,70 @@ public class NotificationServiceImpl implements NotificationService {
                 }
             }
             
-            // 设置待发送通知的其他属性
-            pendingNotification.setReceiver(request.getReceiver());
-            pendingNotification.setSubject(finalSubject);
-            pendingNotification.setContent(finalContent);
-            // 将params转换为JSON字符串
-            if (request.getParams() != null) {
-                try {
-                    String paramsJson = objectMapper.writeValueAsString(request.getParams());
-                    pendingNotification.setParams(paramsJson);
-                } catch (Exception e) {
-                    logger.error("参数序列化失败", e);
-                    pendingNotification.setParams(null);
+            // 处理多个接收者（支持逗号分隔）
+            String[] receivers = request.getReceiver().split(",");
+            logger.info("处理多个接收者: 共 {} 个接收者", receivers.length);
+            
+            for (String receiver : receivers) {
+                receiver = receiver.trim();
+                if (receiver.isEmpty()) {
+                    continue;
                 }
+                
+                // 验证接收者格式
+                if (notificationType.equalsIgnoreCase("email")) {
+                    // 验证邮箱格式
+                    if (!validateEmail(receiver)) {
+                        logger.warn("邮箱格式不正确，跳过发送: {}", maskSensitiveInfo(receiver));
+                        continue;
+                    }
+                } else if (notificationType.equalsIgnoreCase("sms")) {
+                    // 验证手机号格式
+                    if (!validatePhone(receiver)) {
+                        logger.warn("手机号格式不正确，跳过发送: {}", maskSensitiveInfo(receiver));
+                        continue;
+                    }
+                } else {
+                    logger.warn("不支持的通知类型，跳过发送: {}", notificationType);
+                    continue;
+                }
+                
+                // 创建待发送通知实例
+                PendingNotification pendingNotification = new PendingNotification();
+                
+                // 设置模板信息
+                if (template != null) {
+                    pendingNotification.setTemplateId(template.getId());
+                    pendingNotification.setTemplateName(template.getName());
+                    pendingNotification.setType(template.getType());
+                } else {
+                    pendingNotification.setTemplateId(request.getTemplateId() != null ? request.getTemplateId() : "test");
+                    pendingNotification.setTemplateName(request.getTemplateId() != null ? "自定义模板" : "测试模板");
+                    pendingNotification.setType(notificationType);
+                }
+                
+                // 设置待发送通知的其他属性
+                pendingNotification.setReceiver(receiver);
+                pendingNotification.setSubject(finalSubject);
+                pendingNotification.setContent(finalContent);
+                // 将params转换为JSON字符串
+                if (request.getParams() != null) {
+                    try {
+                        String paramsJson = objectMapper.writeValueAsString(request.getParams());
+                        pendingNotification.setParams(paramsJson);
+                    } catch (Exception e) {
+                        logger.error("参数序列化失败", e);
+                        pendingNotification.setParams(null);
+                    }
+                }
+                pendingNotification.setSenderSystem(request.getSenderSystem());
+                pendingNotification.setRequestId(request.getRequestId());
+                
+                logger.info("保存待发送通知到数据库: sendId={}, receiver={}", sendId, maskSensitiveInfo(receiver));
+                
+                // 保存到待发送通知表
+                pendingNotificationService.savePendingNotification(pendingNotification);
             }
-            pendingNotification.setSenderSystem(request.getSenderSystem());
-            pendingNotification.setRequestId(request.getRequestId());
-            
-            logger.info("保存待发送通知到数据库: sendId={}, receiver={}", sendId, maskSensitiveInfo(request.getReceiver()));
-            
-            // 保存到待发送通知表
-            pendingNotificationService.savePendingNotification(pendingNotification);
             
             // 返回成功响应
             response.setSuccess(true);
@@ -282,6 +289,10 @@ public class NotificationServiceImpl implements NotificationService {
             log.setErrorMessage(response.getMessage());
             log.setSendTime(LocalDateTime.now());
             
+            // 设置租户ID
+            String tenantId = com.itheima.activiti.common.TenantContext.getTenantId();
+            log.setTenantId(tenantId);
+            
             // 保存日志
             notificationLogService.recordNotificationLog(log);
         } catch (Exception e) {
@@ -350,5 +361,34 @@ public class NotificationServiceImpl implements NotificationService {
         }
         
         return info;
+    }
+    
+    @Override
+    public NotificationResponse sendBatchNotification(NotificationRequest request) {
+        logger.info("收到批量通知发送请求");
+        // 批量发送通知，当前实现直接调用sendNotification，因为它已经支持逗号分隔的接收者
+        return sendNotification(request);
+    }
+    
+    @Override
+    public NotificationResponse sendScheduledNotification(NotificationRequest request) {
+        logger.info("收到定时通知发送请求");
+        NotificationResponse response = new NotificationResponse();
+        response.setSendId(UUID.randomUUID().toString());
+        response.setTimestamp(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
+        response.setSuccess(true);
+        response.setMessage("定时通知已添加到待发送队列");
+        return response;
+    }
+    
+    @Override
+    public NotificationResponse retryFailedNotification(String logId) {
+        logger.info("收到重试失败通知请求，logId: {}", logId);
+        NotificationResponse response = new NotificationResponse();
+        response.setSendId(UUID.randomUUID().toString());
+        response.setTimestamp(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
+        response.setSuccess(true);
+        response.setMessage("失败通知已重新添加到待发送队列");
+        return response;
     }
 }

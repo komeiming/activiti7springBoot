@@ -8,6 +8,8 @@ public class LoginResponse {
     private String username;
     private String role;
     private Long expireTime;
+    private String serviceModules;
+    private String name;
 
     // 手动实现setter和getter方法
     public String getToken() {
@@ -40,5 +42,21 @@ public class LoginResponse {
 
     public void setExpireTime(Long expireTime) {
         this.expireTime = expireTime;
+    }
+
+    public String getServiceModules() {
+        return serviceModules;
+    }
+
+    public void setServiceModules(String serviceModules) {
+        this.serviceModules = serviceModules;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

@@ -9,6 +9,7 @@ import java.util.Map;
 public class PendingNotification {
     
     private String id; // 待发送ID
+    private String tenantId; // 租户ID
     private String templateId; // 模板ID
     private String templateName; // 模板名称
     private String type; // 通知类型（email/sms）
@@ -32,6 +33,14 @@ public class PendingNotification {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getTemplateId() {

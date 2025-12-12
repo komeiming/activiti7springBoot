@@ -10,6 +10,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -20,6 +24,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/process/definition")
+@Tag(name = "流程定义管理", description = "提供流程定义相关的API接口")
 public class ProcessDefinitionController {
 
     @Autowired
@@ -29,9 +34,14 @@ public class ProcessDefinitionController {
      * 部署流程定义
      */
     @PostMapping("/deploy")
+    @Operation(summary = "部署流程定义", description = "部署流程定义文件，支持.bpmn和.bpmn20.xml格式")
+    @Parameters({
+        @Parameter(name = "file", description = "流程文件", required = true, content = @io.swagger.v3.oas.annotations.media.Content(mediaType = "multipart/form-data")),
+        @Parameter(name = "name", description = "部署名称", required = true)
+    })
     public ResponseEntity<Map<String, Object>> deployProcess(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("deploymentName") String deploymentName) {
+            @RequestParam(value = "name", required = true) String deploymentName) {
         
         // 验证文件格式，支持.bpmn和.bpmn20.xml
         Map<String, Object> result = new HashMap<>();
@@ -171,12 +181,57 @@ public class ProcessDefinitionController {
                 "message", "流程定义已删除"
         ));
     }
+    
+    /**
+     * 删除流程定义（根据流程定义ID）
+     * 兼容前端调用，将流程定义ID转换为部署ID进行删除
+     */
+    @DeleteMapping("/{processDefinitionId}")
+    public ResponseEntity<Map<String, Object>> deleteProcessDefinitionByProcessDefinitionId(
+            @PathVariable String processDefinitionId,
+            @RequestParam(defaultValue = "false") boolean cascade) {
+        
+        try {
+            // 先根据流程定义ID获取流程定义对象
+            ProcessDefinition processDefinition = processDefinitionService.getProcessDefinitionById(processDefinitionId);
+            
+            if (processDefinition == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "success", false,
+                        "message", "流程定义不存在"
+                ));
+            }
+            
+            // 提取部署ID
+            String deploymentId = processDefinition.getDeploymentId();
+            
+            // 调用服务层删除方法
+            boolean deleted = processDefinitionService.deleteProcessDefinition(deploymentId, cascade);
+            
+            if (deleted) {
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "流程定义已删除"
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                        "success", false,
+                        "message", "删除流程定义失败"
+                ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "删除流程定义失败: " + e.getMessage()
+            ));
+        }
+    }
 
     /**
      * 获取流程图
      */
     @GetMapping("/{processDefinitionId}/diagram")
-    public ResponseEntity<byte[]> getProcessDiagram(
+    public ResponseEntity<?> getProcessDiagram(
             @PathVariable String processDefinitionId) {
         
         try {
@@ -185,11 +240,16 @@ public class ProcessDefinitionController {
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.IMAGE_PNG);
-            headers.setContentDispositionFormData("attachment", "process-diagram.png");
+            headers.setContentDispositionFormData("inline", "process-diagram.png");
             
             return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            // 处理流程图资源不存在的情况
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("code", "NO_DIAGRAM_AVAILABLE");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         }
     }
 

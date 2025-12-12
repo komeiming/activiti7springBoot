@@ -3,6 +3,7 @@ package com.itheima.activiti.service.impl;
 import com.itheima.activiti.mapper.NotificationLogMapper;
 import com.itheima.activiti.entity.NotificationLog;
 import com.itheima.activiti.service.NotificationLogService;
+import com.itheima.activiti.common.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +70,9 @@ public class NotificationLogServiceImpl implements NotificationLogService {
      */
     @Override
     public List<NotificationLog> getLogList(Map<String, Object> params) {
+        // 获取当前租户ID，并添加到查询条件中
+        String tenantId = TenantContext.getTenantId();
+        params.put("tenantId", tenantId);
         return notificationLogMapper.selectByParams(params);
     }
     
@@ -101,6 +105,9 @@ public class NotificationLogServiceImpl implements NotificationLogService {
      */
     @Override
     public int countLogs(Map<String, Object> condition) {
+        // 获取当前租户ID，并添加到查询条件中
+        String tenantId = TenantContext.getTenantId();
+        condition.put("tenantId", tenantId);
         return notificationLogMapper.countLogs(condition);
     }
     

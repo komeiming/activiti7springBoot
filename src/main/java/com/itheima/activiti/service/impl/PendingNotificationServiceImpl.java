@@ -59,6 +59,10 @@ public class PendingNotificationServiceImpl implements PendingNotificationServic
                 pendingNotification.setNextRetryTime(LocalDateTime.now());
             }
             
+            // 设置租户ID
+            String tenantId = com.itheima.activiti.common.TenantContext.getTenantId();
+            pendingNotification.setTenantId(tenantId);
+            
             // 保存待发送通知
             pendingNotificationMapper.insert(pendingNotification);
             return pendingNotification;

@@ -48,13 +48,38 @@ public class NotificationSenderServiceImpl implements NotificationSenderService 
             String finalContent;
             String sender;
             
-            // 直接使用请求中的subject和content，不依赖模板
-            // 这样即使templateId不存在，也能发送通知
-            finalSubject = request.getParams() != null && request.getParams().get("subject") != null ? 
-                    request.getParams().get("subject").toString() : "测试邮件";
-            finalContent = request.getParams() != null && request.getParams().get("content") != null ? 
-                    request.getParams().get("content").toString() : "这是一封测试邮件";
+            // 获取模板信息，如果有templateId的话
+            NotificationTemplate template = null;
+            if (request.getTemplateId() != null) {
+                template = notificationTemplateService.getTemplateById(request.getTemplateId());
+            }
+            
+            // 使用模板的subject和content，或者从request.params中获取
+            if (template != null) {
+                // 使用模板内容
+                finalSubject = template.getSubject() != null ? template.getSubject() : "测试邮件";
+                finalContent = template.getContent() != null ? template.getContent() : "这是一封测试邮件";
+            } else {
+                // 直接从request.params中获取（用于测试邮件）
+                finalSubject = request.getParams() != null && request.getParams().get("subject") != null ? 
+                        request.getParams().get("subject").toString() : "测试邮件";
+                finalContent = request.getParams() != null && request.getParams().get("content") != null ? 
+                        request.getParams().get("content").toString() : "这是一封测试邮件";
+            }
             sender = fromEmail;
+            
+            // 替换模板中的参数（支持$paramName和${paramName}格式）
+            if (request.getParams() != null) {
+                for (java.util.Map.Entry<String, Object> entry : request.getParams().entrySet()) {
+                    // 支持$paramName格式
+                    String placeholder1 = "$" + entry.getKey();
+                    // 支持${paramName}格式
+                    String placeholder2 = "${" + entry.getKey() + "}";
+                    String value = entry.getValue() != null ? entry.getValue().toString() : "";
+                    finalSubject = finalSubject.replace(placeholder1, value).replace(placeholder2, value);
+                    finalContent = finalContent.replace(placeholder1, value).replace(placeholder2, value);
+                }
+            }
             
             // 发送真实邮件
             MimeMessage message = javaMailSender.createMimeMessage();

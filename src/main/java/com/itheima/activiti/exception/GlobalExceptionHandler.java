@@ -88,9 +88,30 @@ public class GlobalExceptionHandler {
         logger.warn("Authentication Exception: {}", ex.getMessage());
         
         Map<String, Object> response = new HashMap<>();
+        String message = "认证失败: " + ex.getMessage();
+        String errorCode = "AUTHENTICATION_ERROR";
+        
+        // 区分不同类型的认证异常
+        if (ex instanceof org.springframework.security.authentication.BadCredentialsException) {
+            message = "无效的凭证，请检查您的APP ID和密钥";
+            errorCode = "INVALID_CREDENTIALS";
+        } else if (ex instanceof org.springframework.security.authentication.DisabledException) {
+            message = "账号已被禁用，请联系管理员";
+            errorCode = "ACCOUNT_DISABLED";
+        } else if (ex instanceof org.springframework.security.authentication.LockedException) {
+            message = "账号已被锁定，请稍后重试";
+            errorCode = "ACCOUNT_LOCKED";
+        } else if (ex instanceof org.springframework.security.authentication.AccountExpiredException) {
+            message = "账号已过期，请联系管理员";
+            errorCode = "ACCOUNT_EXPIRED";
+        } else if (ex instanceof org.springframework.security.authentication.CredentialsExpiredException) {
+            message = "凭证已过期，请重新生成";
+            errorCode = "CREDENTIALS_EXPIRED";
+        }
+        
         response.put("success", false);
-        response.put("message", "认证失败: " + ex.getMessage());
-        response.put("errorCode", "AUTHENTICATION_ERROR");
+        response.put("message", message);
+        response.put("errorCode", errorCode);
         
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }

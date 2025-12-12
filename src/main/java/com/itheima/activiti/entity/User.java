@@ -23,5 +23,5 @@ public class User {
     private List<Role> roles;
     
     // 用户拥有的权限列表
-    private List<String> permissions;
+    private List<Permission> permissions;
 }

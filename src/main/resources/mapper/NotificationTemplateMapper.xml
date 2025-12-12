@@ -4,6 +4,7 @@
     
     <resultMap id="BaseResultMap" type="com.itheima.activiti.entity.NotificationTemplate">
         <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
         <result column="name" property="name"/>
         <result column="code" property="code"/>
         <result column="type" property="type"/>
@@ -21,7 +22,7 @@
     </resultMap>
     
     <sql id="Base_Column_List">
-        id, name, code, type, status, sender, subject, content, reply_to, signature, description,
+        id, tenant_id, name, code, type, status, sender, subject, content, reply_to, signature, description,
         created_by, created_at, updated_by, updated_at
     </sql>
     
@@ -101,14 +102,14 @@
     
     <!-- 插入模板 -->
     <insert id="insert">
-        INSERT INTO notification_template (id, name, code, type, status, content, subject, sender, reply_to, signature, description, created_by, created_at, updated_by, updated_at)
-        VALUES (#{id}, #{name}, #{code}, #{type}, #{status}, #{content}, #{subject}, #{sender}, #{replyTo}, #{signature}, #{description}, #{createdBy}, #{createdTime}, #{updatedBy}, #{updatedTime})
+        INSERT INTO notification_template (id, tenant_id, name, code, type, status, content, subject, sender, reply_to, signature, description, created_by, created_at, updated_by, updated_at)
+        VALUES (#{id}, #{tenantId}, #{name}, #{code}, #{type}, #{status}, #{content}, #{subject}, #{sender}, #{replyTo}, #{signature}, #{description}, #{createdBy}, #{createdTime}, #{updatedBy}, #{updatedTime})
     </insert>
     
     <!-- 更新模板 -->
     <update id="update">
         UPDATE notification_template
-        SET name = #{name}, code = #{code}, type = #{type}, status = #{status}, content = #{content}, subject = #{subject}, sender = #{sender}, reply_to = #{replyTo}, signature = #{signature}, description = #{description}, updated_by = #{updatedBy}, updated_at = #{updatedTime}
+        SET tenant_id = #{tenantId}, name = #{name}, code = #{code}, type = #{type}, status = #{status}, content = #{content}, subject = #{subject}, sender = #{sender}, reply_to = #{replyTo}, signature = #{signature}, description = #{description}, updated_by = #{updatedBy}, updated_at = #{updatedTime}
         WHERE id = #{id}
     </update>
     
@@ -151,7 +152,13 @@
             <if test="status != null and status != ''">
                 AND status = #{status}
             </if>
+            <if test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </if>
         </where>
         ORDER BY created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
     </select>
 </mapper>

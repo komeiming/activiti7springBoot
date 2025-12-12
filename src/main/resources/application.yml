@@ -41,10 +41,6 @@ spring:
         smtp:
           # 是否需要认证
           auth: true
-          # 是否启用STARTTLS
-          starttls:
-            enable: true
-            required: true
           # SSL配置
           ssl:
             enable: true

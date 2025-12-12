@@ -6,6 +6,7 @@ package com.itheima.activiti.dto;
 public class LoginRequest {
     private String username;
     private String password;
+    private String captcha;
 
     // 手动实现getter和setter方法
     public String getUsername() {
@@ -22,5 +23,13 @@ public class LoginRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getCaptcha() {
+        return captcha;
+    }
+
+    public void setCaptcha(String captcha) {
+        this.captcha = captcha;
     }
 }

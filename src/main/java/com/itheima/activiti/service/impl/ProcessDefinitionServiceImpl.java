@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +26,8 @@ import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.runtime.ProcessInstance;
 
 import com.itheima.activiti.service.ProcessDefinitionService;
+import com.itheima.activiti.utils.SecurityUtil;
+import com.itheima.activiti.common.TenantContext;
 
 /**
  * 流程定义服务实现类
@@ -42,6 +45,26 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     
     @Autowired
     private ProcessEngine processEngine;
+    
+    /**
+     * 应用启动时自动部署流程定义
+     */
+    @PostConstruct
+    public void autoDeployProcesses() {
+        System.out.println("=== 开始自动部署流程定义 ===");
+        try {
+            // 部署leave流程
+            deployLeaveProcess();
+            
+            // 部署onboard流程
+            deployOnboardProcess();
+            
+            System.out.println("=== 流程定义自动部署完成 ===");
+        } catch (Exception e) {
+            System.err.println("自动部署流程定义失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     public Deployment deployProcess(MultipartFile file, String deploymentName) {
         try {
@@ -191,10 +214,25 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         
         // 在Activiti 7中，获取流程图的正确方法
         String diagramResourceName = processDefinition.getDiagramResourceName();
-        return repositoryService.getResourceAsStream(
+        
+        System.out.println("[ProcessDefinitionServiceImpl] 流程图资源名称: " + diagramResourceName);
+        System.out.println("[ProcessDefinitionServiceImpl] 部署ID: " + processDefinition.getDeploymentId());
+        System.out.println("[ProcessDefinitionServiceImpl] 资源名称: " + processDefinition.getResourceName());
+        
+        if (diagramResourceName == null || diagramResourceName.isEmpty()) {
+            throw new RuntimeException("流程定义没有关联的流程图资源，Activiti不会自动生成流程图");
+        }
+        
+        InputStream inputStream = repositoryService.getResourceAsStream(
                 processDefinition.getDeploymentId(),
                 diagramResourceName
         );
+        
+        if (inputStream == null) {
+            throw new RuntimeException("无法获取流程图资源: " + diagramResourceName);
+        }
+        
+        return inputStream;
     }
 
     public String getProcessModelXML(String processDefinitionId) {
@@ -225,6 +263,10 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     public String startProcessInstance(String processDefinitionKey, String businessKey, Map<String, Object> variables) {
         try {
             System.out.println("服务层开始启动流程实例，processDefinitionKey: " + processDefinitionKey);
+            
+            // 获取当前租户ID
+            String tenantId = TenantContext.getTenantId();
+            System.out.println("当前租户ID: " + tenantId);
             
             // 验证流程定义是否存在且处于激活状态
             ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
@@ -257,14 +299,37 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 variables.put("applicant", variables.get("initiatorId"));
             }
             
-            // 启动流程实例
-            ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(
-                    processDefinitionKey, 
-                    businessKey, 
-                    variables);
+            // 添加租户ID到流程变量中，用于后续的租户隔离
+            variables.put("tenantId", tenantId);
             
-            System.out.println("流程实例启动成功: " + processInstance.getId() + ", 业务键: " + processInstance.getBusinessKey());
-            return processInstance.getId();
+            // 获取当前用户ID，从variables中获取
+            String currentUserId = (String) variables.get("initiatorId");
+            if (currentUserId == null) {
+                // 如果没有initiatorId，尝试从applicant获取
+                currentUserId = (String) variables.get("applicant");
+            }
+            
+            System.out.println("当前用户ID: " + currentUserId);
+            
+            // 设置Activiti认证用户ID，这将成为流程实例的startUserId
+            if (currentUserId != null) {
+                SecurityUtil.logInAs(currentUserId);
+                System.out.println("已设置Activiti认证用户ID: " + currentUserId);
+            }
+            
+            try {
+                // 启动流程实例
+                ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(
+                        processDefinitionKey, 
+                        businessKey, 
+                        variables);
+                
+                System.out.println("流程实例启动成功: " + processInstance.getId() + ", 业务键: " + processInstance.getBusinessKey());
+                return processInstance.getId();
+            } finally {
+                // 清除认证信息，避免影响后续操作
+                SecurityUtil.clearAuthentication();
+            }
         } catch (Exception e) {
             System.err.println("服务层启动流程实例失败: " + e.getMessage());
             e.printStackTrace();
@@ -298,6 +363,35 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             System.err.println("部署Leave流程失败: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("部署Leave流程失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 部署员工onboard流程定义
+     * @return 部署ID
+     */
+    public String deployOnboardProcess() {
+        try {
+            // 尝试部署onboard流程文件 - 使用正确的文件路径
+            String resourcePath = "processes/employee-onboard.bpmn";
+            
+            System.out.println("尝试部署流程文件: " + resourcePath);
+            
+            // 部署流程定义
+            Deployment deployment = repositoryService.createDeployment()
+                    .addClasspathResource(resourcePath)
+                    .name("Onboard Process")
+                    .category("HR")
+                    .deploy();
+            
+            String deploymentId = deployment.getId();
+            System.out.println("员工onboard流程部署成功，部署ID: " + deploymentId);
+            
+            return deploymentId;
+        } catch (Exception e) {
+            System.err.println("部署员工onboard流程失败: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("部署员工onboard流程失败: " + e.getMessage(), e);
         }
     }
     
@@ -350,15 +444,14 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     
     // 新增方法：根据用户ID获取活跃的流程实例列表
     public Map<String, Object> getActiveProcessInstancesByUserId(String userId, int page, int pageSize) {
-        // 查询用户参与的活跃流程实例
-        // 这里通过用户已完成的任务来关联其参与的流程实例
-        long total = processEngine.getHistoryService().createHistoricTaskInstanceQuery()
-                .taskAssignee(userId)
-                .processUnfinished()
+        // 查询用户发起的活跃流程实例
+        long total = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
+                .startedBy(userId)
+                .unfinished()
                 .count();
         
         List<HistoricProcessInstance> processInstances = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
-                .involvedUser(userId)
+                .startedBy(userId)
                 .unfinished()
                 .orderByProcessInstanceStartTime().desc()
                 .listPage((page - 1) * pageSize, pageSize);
@@ -385,13 +478,14 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     
     // 新增方法：根据用户ID获取已完成的流程实例列表
     public Map<String, Object> getCompletedProcessInstancesByUserId(String userId, int page, int pageSize) {
+        // 查询指定用户发起的已完成流程实例
         long total = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
-                .involvedUser(userId)
+                .startedBy(userId)
                 .finished()
                 .count();
         
         List<HistoricProcessInstance> processInstances = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
-                .involvedUser(userId)
+                .startedBy(userId)
                 .finished()
                 .orderByProcessInstanceEndTime().desc()
                 .listPage((page - 1) * pageSize, pageSize);

@@ -7,6 +7,8 @@ import org.activiti.engine.runtime.ProcessInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -56,6 +58,16 @@ public class ProcessInstanceController {
                 }
             }
 
+            // 获取当前登录用户信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUser = authentication.getName();
+            logger.info("当前登录用户: {}", currentUser);
+            
+            // 将当前用户信息添加到流程变量中
+            variables.put("initiatorId", currentUser);
+            variables.put("applicant", currentUser);
+            variables.put("startUserId", currentUser);
+
             logger.info("准备启动流程实例，processDefinitionKey: {}, businessKey: {}, variables: {}", 
                         processDefinitionKey, businessKey, variables);
 
@@ -90,15 +102,58 @@ public class ProcessInstanceController {
             @PathVariable String processInstanceId) {
         try {
             logger.info("获取流程实例详情，processInstanceId: {}", processInstanceId);
+            
+            // 获取当前登录用户
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUser = authentication.getName();
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()) || "admin".equals(currentUser));
 
             ProcessInstance processInstance = processDefinitionService.getProcessInstanceById(processInstanceId);
+            HistoricProcessInstance historicProcessInstance = null;
+            
+            boolean hasPermission = isAdmin;
+            
             if (processInstance == null) {
                 // 尝试从历史流程实例中查询
-                HistoricProcessInstance historicProcessInstance = processDefinitionService.getHistoricProcessInstanceById(processInstanceId);
+                historicProcessInstance = processDefinitionService.getHistoricProcessInstanceById(processInstanceId);
                 if (historicProcessInstance == null) {
                     return CommonResponse.notFound("流程实例不存在");
                 }
+                
+                // 检查权限：如果不是管理员，只能查看自己发起或参与的流程
+                if (!isAdmin) {
+                    // 1. 检查是否是流程发起人
+                    if (currentUser.equals(historicProcessInstance.getStartUserId())) {
+                        hasPermission = true;
+                    } else {
+                        // 2. 检查是否是流程参与者
+                        List<Map<String, Object>> historyActivities = processDefinitionService.getProcessInstanceHistory(processInstanceId);
+                        hasPermission = historyActivities.stream()
+                                .anyMatch(activity -> currentUser.equals(activity.get("assignee")));
+                    }
+                }
+            } else {
+                // 检查权限：如果不是管理员，只能查看自己发起或参与的流程
+                if (!isAdmin) {
+                    // 1. 检查是否是流程发起人
+                    if (currentUser.equals(processInstance.getStartUserId())) {
+                        hasPermission = true;
+                    } else {
+                        // 2. 检查是否是流程参与者
+                        List<Map<String, Object>> historyActivities = processDefinitionService.getProcessInstanceHistory(processInstanceId);
+                        hasPermission = historyActivities.stream()
+                                .anyMatch(activity -> currentUser.equals(activity.get("assignee")));
+                    }
+                }
+            }
+            
+            // 权限检查失败
+            if (!hasPermission) {
+                return CommonResponse.forbidden("没有权限查看该流程实例");
+            }
 
+            if (historicProcessInstance != null) {
                 // 构建历史流程实例信息
                 Map<String, Object> result = new HashMap<>();
                 result.put("id", historicProcessInstance.getId());
@@ -254,6 +309,49 @@ public class ProcessInstanceController {
             @PathVariable String processInstanceId) {
         try {
             logger.info("获取流程实例历史活动，processInstanceId: {}", processInstanceId);
+            
+            // 获取当前登录用户
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUser = authentication.getName();
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()) || "admin".equals(currentUser));
+            
+            // 检查用户是否有权限查看该流程实例
+            // 1. 获取流程实例信息
+            ProcessInstance processInstance = processDefinitionService.getProcessInstanceById(processInstanceId);
+            HistoricProcessInstance historicProcessInstance = null;
+            
+            if (processInstance == null) {
+                // 尝试从历史流程实例中查询
+                historicProcessInstance = processDefinitionService.getHistoricProcessInstanceById(processInstanceId);
+                if (historicProcessInstance == null) {
+                    return CommonResponse.notFound("流程实例不存在");
+                }
+            }
+            
+            // 2. 检查权限：管理员可以查看所有流程，普通用户只能查看自己发起或参与的流程
+            if (!isAdmin) {
+                boolean hasPermission = false;
+                
+                // 检查是否是流程发起人
+                if (processInstance != null && currentUser.equals(processInstance.getStartUserId())) {
+                    hasPermission = true;
+                } else if (historicProcessInstance != null && currentUser.equals(historicProcessInstance.getStartUserId())) {
+                    hasPermission = true;
+                }
+                
+                // 检查是否是流程参与者
+                if (!hasPermission) {
+                    // 检查流程历史活动中是否有该用户作为办理人
+                    List<Map<String, Object>> historyActivities = processDefinitionService.getProcessInstanceHistory(processInstanceId);
+                    hasPermission = historyActivities.stream()
+                            .anyMatch(activity -> currentUser.equals(activity.get("assignee")));
+                }
+                
+                if (!hasPermission) {
+                    return CommonResponse.forbidden("没有权限查看该流程实例的历史活动");
+                }
+            }
 
             List<Map<String, Object>> historyActivities = processDefinitionService.getProcessInstanceHistory(processInstanceId);
 

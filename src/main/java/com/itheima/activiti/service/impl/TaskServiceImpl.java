@@ -1,6 +1,7 @@
 package com.itheima.activiti.service.impl;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.itheima.activiti.service.TaskService;
+import com.itheima.activiti.common.TenantContext;
 
 @Service
 public class TaskServiceImpl implements TaskService {
@@ -165,7 +167,8 @@ public class TaskServiceImpl implements TaskService {
     }
 
     public Map<String, Object> getAllTasks(int page, int pageSize) {
-        long totalCount = activitiTaskService.createTaskQuery().count();
+        long totalCount = activitiTaskService.createTaskQuery()
+                .count();
         List<Task> tasks = activitiTaskService.createTaskQuery()
                 .listPage((page - 1) * pageSize, pageSize);
         
@@ -187,6 +190,9 @@ public class TaskServiceImpl implements TaskService {
         try {
             logger.info("查询已完成任务列表，处理人: {}, 任务名称: {}, 页码: {}, 每页数量: {}", 
                         assignee, taskName, page, pageSize);
+            
+            // 获取当前租户ID
+            String tenantId = TenantContext.getTenantId();
             
             // 使用ProcessEngine获取HistoryService
             ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
@@ -307,5 +313,66 @@ public class TaskServiceImpl implements TaskService {
             result.add(taskMap);
         }
         return result;
+    }
+    
+    @Override
+    public Map<String, Object> getUserTaskStatistics(String assignee) {
+        Map<String, Object> statistics = new HashMap<>();
+        try {
+            // 获取流程引擎
+            ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
+            
+            // 获取任务服务
+            org.activiti.engine.TaskService taskService = processEngine.getTaskService();
+            
+            // 获取历史服务
+            org.activiti.engine.HistoryService historyService = processEngine.getHistoryService();
+            
+            // 1. 待处理任务数（pending）
+            long pendingTasks = taskService.createTaskQuery()
+                    .taskAssignee(assignee)
+                    .active()
+                    .count();
+            statistics.put("pending", pendingTasks);
+            
+            // 2. 逾期任务数（overdue）
+            long overdueTasks = 0;
+            // 获取所有待处理任务，检查是否逾期
+            List<org.activiti.engine.task.Task> tasks = taskService.createTaskQuery()
+                    .taskAssignee(assignee)
+                    .active()
+                    .list();
+            for (org.activiti.engine.task.Task task : tasks) {
+                Date dueDate = task.getDueDate();
+                if (dueDate != null && new Date().after(dueDate)) {
+                    overdueTasks++;
+                }
+            }
+            statistics.put("overdue", overdueTasks);
+            
+            // 3. 已完成任务数（completed）
+            long completedTasks = historyService.createHistoricTaskInstanceQuery()
+                    .finished()
+                    .taskAssignee(assignee)
+                    .count();
+            statistics.put("completed", completedTasks);
+            
+            // 4. 我的申请数（myApplications）
+            // 统计当前用户发起的流程实例数量（活跃+已完成）
+            long myApplications = historyService.createHistoricProcessInstanceQuery()
+                    .startedBy(assignee)
+                    .count();
+            statistics.put("myApplications", myApplications);
+            
+            logger.info("获取用户任务统计信息成功: assignee={}, statistics={}", assignee, statistics);
+        } catch (Exception e) {
+            logger.error("获取用户任务统计信息失败: assignee={}, error={}", assignee, e.getMessage(), e);
+            // 发生异常时返回默认值
+            statistics.put("pending", 0);
+            statistics.put("overdue", 0);
+            statistics.put("completed", 0);
+            statistics.put("myApplications", 0);
+        }
+        return statistics;
     }
 }

@@ -106,4 +106,9 @@ public interface TaskService {
      * 查询已完成任务列表（分页）
      */
     Map<String, Object> getCompletedTasks(String assignee, String taskName, int page, int pageSize);
+    
+    /**
+     * 获取用户任务统计信息
+     */
+    Map<String, Object> getUserTaskStatistics(String assignee);
 }

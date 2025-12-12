@@ -18,7 +18,7 @@ import java.util.Map;
  * 通知服务控制器
  */
 @RestController
-@RequestMapping("/notification")
+@RequestMapping("/api/notification")
 public class NotificationController {
     
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
@@ -44,6 +44,9 @@ public class NotificationController {
     public Result<NotificationTemplate> createTemplate(@RequestBody NotificationTemplate template) {
         try {
             NotificationTemplate createdTemplate = notificationTemplateService.createTemplate(template);
+            if (createdTemplate == null) {
+                return Result.error("模板创建失败: 服务层处理失败");
+            }
             return Result.success("模板创建成功", createdTemplate);
         } catch (Exception e) {
             return Result.error("模板创建失败: " + e.getMessage());
@@ -109,13 +112,26 @@ public class NotificationController {
     @GetMapping("/templates")
     public Result<Map<String, Object>> getTemplates(@RequestParam Map<String, Object> params) {
         try {
+            // 处理分页参数：将page和size转换为offset和limit
+            if (params.containsKey("page") && params.containsKey("size")) {
+                try {
+                    int page = Integer.parseInt(params.get("page").toString());
+                    int size = Integer.parseInt(params.get("size").toString());
+                    int offset = (page - 1) * size;
+                    params.put("offset", offset);
+                    params.put("limit", size);
+                } catch (NumberFormatException e) {
+                    // 忽略无效的分页参数
+                }
+            }
+            
             // 获取模板列表
             java.util.List<NotificationTemplate> templates = notificationTemplateService.getTemplatesByCondition(params);
             
             // 构建分页响应
             Map<String, Object> response = new HashMap<>();
             response.put("list", templates);
-            response.put("total", templates.size());
+            response.put("total", templates != null ? templates.size() : 0);
             
             return Result.success(response);
         } catch (Exception e) {
@@ -290,6 +306,23 @@ public class NotificationController {
             return Result.success(response);
         } catch (Exception e) {
             return Result.error("获取通知发送日志失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 重试发送失败的通知
+     */
+    @PutMapping("/logs/{id}/retry")
+    public Result<NotificationResponse> retryFailedNotification(@PathVariable String id) {
+        try {
+            NotificationResponse response = notificationService.retryFailedNotification(id);
+            if (response.isSuccess()) {
+                return Result.success(response.getMessage(), response);
+            } else {
+                return Result.error(response.getMessage());
+            }
+        } catch (Exception e) {
+            return Result.error("重试发送通知失败: " + e.getMessage());
         }
     }
 }

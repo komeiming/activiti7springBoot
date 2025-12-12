@@ -1,8 +1,7 @@
 package com.itheima.activiti.mapper;
 
 import com.itheima.activiti.entity.SysRole;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -46,4 +45,27 @@ public interface RoleMapper {
      * 删除角色
      */
     int delete(@Param("id") Long id);
+    
+    /**
+     * 根据角色ID查询拥有的菜单权限ID列表
+     */
+    @Select("SELECT permission_id FROM sys_role_permission WHERE role_id = #{roleId}")
+    List<Long> findMenuIdsByRoleId(@Param("roleId") Long roleId);
+    
+    /**
+     * 删除角色的所有菜单权限
+     */
+    @Delete("DELETE FROM sys_role_permission WHERE role_id = #{roleId}")
+    int deleteRoleMenus(@Param("roleId") Long roleId);
+    
+    /**
+     * 批量添加角色菜单权限
+     */
+    @Insert("<script>" +
+            "INSERT INTO sys_role_permission (role_id, permission_id) VALUES " +
+            "<foreach collection=\"menuIds\" item=\"menuId\" separator=\",\">" +
+            "(#{roleId}, #{menuId})" +
+            "</foreach>" +
+            "</script>")
+    int insertRoleMenus(@Param("roleId") Long roleId, @Param("menuIds") List<Long> menuIds);
 }

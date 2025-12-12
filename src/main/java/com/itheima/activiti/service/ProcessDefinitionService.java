@@ -134,6 +134,12 @@ public interface ProcessDefinitionService {
     String deployLeaveProcess();
     
     /**
+     * 部署员工onboard流程定义
+     * @return 部署ID
+     */
+    String deployOnboardProcess();
+    
+    /**
      * 获取流程实例
      * @param processInstanceId 流程实例ID
      * @return 流程实例

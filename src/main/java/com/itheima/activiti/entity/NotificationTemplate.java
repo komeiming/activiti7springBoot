@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public class NotificationTemplate {
     
     private String id; // 模板ID（唯一标识）
+    private String tenantId; // 租户ID
     private String name; // 模板名称
     private String code; // 模板编码
     private String type; // 模板类型（email/sms）
@@ -29,6 +30,14 @@ public class NotificationTemplate {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getName() {

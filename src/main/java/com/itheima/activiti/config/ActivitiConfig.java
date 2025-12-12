@@ -32,6 +32,8 @@ public class ActivitiConfig {
         config.setTransactionManager(transactionManager());
         config.setDatabaseSchemaUpdate("true");
         config.setDbHistoryUsed(true);
+        // 设置历史级别为full，确保记录完整的流程历史数据
+        config.setHistoryLevel(org.activiti.engine.impl.history.HistoryLevel.FULL);
         return config;
     }
 

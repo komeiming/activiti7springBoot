@@ -149,4 +149,37 @@ public class RoleController {
             return CommonResponse.fail("查询用户角色失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 获取角色菜单权限
+     */
+    @GetMapping("/{roleId}/menus")
+    public CommonResponse<List<Long>> getRoleMenuPermissions(@PathVariable Long roleId) {
+        try {
+            List<Long> menuIds = roleMapper.findMenuIdsByRoleId(roleId);
+            return CommonResponse.success(menuIds);
+        } catch (Exception e) {
+            return CommonResponse.fail("获取角色菜单权限失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 保存角色菜单权限
+     */
+    @PostMapping("/{roleId}/menus")
+    public CommonResponse<String> saveRoleMenuPermissions(@PathVariable Long roleId, @RequestBody List<Long> menuIds) {
+        try {
+            // 先删除原有权限
+            roleMapper.deleteRoleMenus(roleId);
+            
+            // 再批量添加新权限
+            if (menuIds != null && !menuIds.isEmpty()) {
+                roleMapper.insertRoleMenus(roleId, menuIds);
+            }
+            
+            return CommonResponse.success("保存角色菜单权限成功");
+        } catch (Exception e) {
+            return CommonResponse.fail("保存角色菜单权限失败: " + e.getMessage());
+        }
+    }
 }

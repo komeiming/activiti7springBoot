@@ -13,6 +13,8 @@ public class NotificationRequest {
     private String senderSystem; // 调用系统标识
     private String requestId; // 请求ID（用于跟踪）
     private String type; // 通知类型（EMAIL或SMS）
+    private String tenantId; // 租户ID
+    private String appId; // APP ID
 
     public String getTemplateId() {
         return templateId;
@@ -60,5 +62,21 @@ public class NotificationRequest {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public String getAppId() {
+        return appId;
+    }
+
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
 }

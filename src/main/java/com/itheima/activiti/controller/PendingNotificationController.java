@@ -13,7 +13,7 @@ import java.util.Map;
  * 待发送通知控制器
  */
 @RestController
-@RequestMapping("/notification/pending")
+@RequestMapping("/api/notification/pending")
 public class PendingNotificationController {
     
     @Autowired

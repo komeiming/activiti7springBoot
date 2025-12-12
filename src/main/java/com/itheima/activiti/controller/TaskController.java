@@ -1,10 +1,13 @@
 package com.itheima.activiti.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.activiti.engine.ProcessEngine;
+import org.activiti.engine.ProcessEngines;
 import org.activiti.engine.task.Comment;
 import org.activiti.engine.task.Task;
 import org.activiti.engine.task.TaskQuery;
@@ -24,9 +27,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.itheima.activiti.dto.CommonResponse;
 import com.itheima.activiti.dto.TaskDTO;
 import com.itheima.activiti.service.TaskService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
+@Tag(name = "任务管理", description = "提供任务管理相关的API接口")
 public class TaskController {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskController.class);
@@ -35,27 +42,84 @@ public class TaskController {
     private TaskService taskService;
 
     /**
-     * 获取任务详情
+     * 获取任务详情（支持已办任务）
      */
     @GetMapping("/{taskId}")
+    @Operation(summary = "获取任务详情", description = "根据任务ID获取任务详情，支持已办任务")
+    @Parameter(name = "taskId", description = "任务ID", required = true)
     public CommonResponse<Map<String, Object>> getTaskDetail(@PathVariable String taskId) {
         try {
+            // 1. 首先尝试查询运行时任务
             Task task = taskService.getTaskById(taskId);
+            Map<String, Object> variables = new HashMap<>();
+            List<Comment> comments = new ArrayList<>();
+            TaskDTO taskDTO = new TaskDTO();
+            boolean isCompleted = false;
+            
             if (task != null) {
-                TaskDTO taskDTO = convertToDTO(task);
-                Map<String, Object> variables = taskService.getTaskVariables(taskId);
-                List<Comment> comments = taskService.getTaskComments(taskId);
-                
-                Map<String, Object> responseData = new HashMap<>();
-                responseData.put("task", taskDTO);
-                responseData.put("variables", variables);
-                responseData.put("comments", comments);
-                
-                return CommonResponse.success(responseData);
+                // 运行时任务（待办任务）
+                taskDTO = convertToDTO(task);
+                variables = taskService.getTaskVariables(taskId);
+                comments = taskService.getTaskComments(taskId);
             } else {
-                return CommonResponse.notFound("任务不存在");
+                // 2. 如果运行时任务不存在，尝试查询历史任务（已办任务）
+                isCompleted = true;
+                
+                // 使用ProcessEngine获取HistoryService
+                ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
+                org.activiti.engine.HistoryService historyService = processEngine.getHistoryService();
+                
+                // 查询历史任务
+                org.activiti.engine.history.HistoricTaskInstance historicTask = historyService.createHistoricTaskInstanceQuery()
+                    .taskId(taskId)
+                    .finished()
+                    .singleResult();
+                
+                if (historicTask != null) {
+                    // 转换历史任务为DTO
+                    taskDTO = new TaskDTO();
+                    try {
+                        // 使用反射安全地设置私有字段
+                        setPrivateField(taskDTO, "id", historicTask.getId());
+                        setPrivateField(taskDTO, "name", historicTask.getName());
+                        setPrivateField(taskDTO, "description", historicTask.getDescription());
+                        setPrivateField(taskDTO, "assignee", historicTask.getAssignee());
+                        setPrivateField(taskDTO, "createTime", historicTask.getCreateTime());
+                        setPrivateField(taskDTO, "dueDate", historicTask.getDueDate());
+                        setPrivateField(taskDTO, "priority", historicTask.getPriority());
+                        setPrivateField(taskDTO, "processInstanceId", historicTask.getProcessInstanceId());
+                        setPrivateField(taskDTO, "processDefinitionId", historicTask.getProcessDefinitionId());
+                        setPrivateField(taskDTO, "taskDefinitionKey", historicTask.getTaskDefinitionKey());
+                    } catch (Exception e) {
+                        logger.error("转换历史任务到DTO时出错: " + e.getMessage(), e);
+                    }
+                    
+                    // 获取历史流程变量
+                    List<org.activiti.engine.history.HistoricVariableInstance> variableInstances = historyService
+                        .createHistoricVariableInstanceQuery()
+                        .processInstanceId(historicTask.getProcessInstanceId())
+                        .list();
+                    
+                    for (org.activiti.engine.history.HistoricVariableInstance variableInstance : variableInstances) {
+                        variables.put(variableInstance.getVariableName(), variableInstance.getValue());
+                    }
+                    
+                    // 获取任务评论
+                    comments = taskService.getTaskComments(taskId);
+                } else {
+                    return CommonResponse.notFound("任务不存在");
+                }
             }
+            
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("task", taskDTO);
+            responseData.put("variables", variables);
+            responseData.put("comments", comments);
+            responseData.put("completed", isCompleted);
+            
+            return CommonResponse.success(responseData);
         } catch (Exception e) {
+            logger.error("获取任务详情失败: " + e.getMessage(), e);
             return CommonResponse.fail("获取任务详情失败: " + e.getMessage());
         }
     }
@@ -324,6 +388,25 @@ public class TaskController {
         } catch (Exception e) {
             logger.error("查询已完成任务失败:", e);
             return CommonResponse.fail("查询已完成任务失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取任务统计信息
+     */
+    @GetMapping("/statistics")
+    public CommonResponse<Map<String, Object>> getTaskStatistics() {
+        try {
+            // 获取当前登录用户
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUser = authentication.getName();
+            
+            // 获取任务统计信息
+            Map<String, Object> statistics = taskService.getUserTaskStatistics(currentUser);
+            return CommonResponse.success(statistics);
+        } catch (Exception e) {
+            logger.error("获取任务统计信息失败:", e);
+            return CommonResponse.fail("获取任务统计信息失败: " + e.getMessage());
         }
     }
     

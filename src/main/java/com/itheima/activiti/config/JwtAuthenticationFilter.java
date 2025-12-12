@@ -1,9 +1,13 @@
 package com.itheima.activiti.config;
 
+import com.itheima.activiti.common.TenantContext;
+import com.itheima.activiti.entity.Tenant;
+import com.itheima.activiti.service.TenantService;
 import com.itheima.activiti.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,10 +29,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private final JwtUtil jwtUtil;
+    private final TenantService tenantService;
 
-    // 构造函数注入JwtUtil
-    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+    // 构造函数注入JwtUtil和TenantService
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, TenantService tenantService) {
         this.jwtUtil = jwtUtil;
+        this.tenantService = tenantService;
     }
 
     @Override
@@ -48,17 +54,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             logger.debug("[JWT过滤器] 请求头 - {}: {}", headerName, request.getHeader(headerName));
         }
         
-        // 对于登录请求和测试请求，直接放行，不进行JWT验证处理
+        // 对于登录请求、注册请求、测试请求和管理员API请求，直接放行，不进行JWT验证处理
         // 适配多种可能的登录请求路径：
         // 1. /api/auth/login - 直接访问后端的路径
         // 2. /auth/login - 前端代理后（移除/api前缀）的路径
-        boolean isLoginRequest = (("/api/auth/login".equals(requestUri) || "/auth/login".equals(requestUri)) && "POST".equals(requestMethod));
+        // 3. 租户登录路径
+        boolean isLoginRequest = (("/api/auth/login".equals(requestUri) || "/auth/login".equals(requestUri) || "/api/auth/tenant/login".equals(requestUri) || "/auth/tenant/login".equals(requestUri)) && "POST".equals(requestMethod));
         // 适配测试请求路径
         boolean isTestRequest = requestUri.startsWith("/notification/test/");
-        if (isLoginRequest || isTestRequest) {
-            logger.info("[JWT过滤器] 匹配到登录请求或测试请求，直接放行。请求URI: {}", requestUri);
+        // 适配租户注册请求路径
+        boolean isRegisterRequest = requestUri.equals("/api/v1/tenant/register") || requestUri.equals("/v1/tenant/register");
+        // 适配管理员API请求路径
+        boolean isAdminApiRequest = requestUri.startsWith("/api/admin/");;
+        if (isLoginRequest || isTestRequest || isRegisterRequest || isAdminApiRequest) {
+            logger.info("[JWT过滤器] 匹配到登录请求、测试请求或注册请求，直接放行。请求URI: {}", requestUri);
             filterChain.doFilter(request, response);
-            logger.info("[JWT过滤器] 登录请求或测试请求处理完成");
+            logger.info("[JWT过滤器] 登录请求、测试请求或注册请求处理完成");
             return;
         }
         
@@ -94,11 +105,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         if (rolesStr != null) {
                             String[] roles = rolesStr.split(",");
                             for (String r : roles) {
-                                authorities.add(new SimpleGrantedAuthority("ROLE_" + r));
+                                // 如果角色已经包含ROLE_前缀，则直接使用，否则添加前缀
+                                String authority = r.startsWith("ROLE_") ? r : "ROLE_" + r;
+                                authorities.add(new SimpleGrantedAuthority(authority));
                             }
                         } else if (role != null) {
                             // 如果没有多角色信息，只添加主角色
-                            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                            // 如果角色已经包含ROLE_前缀，则直接使用，否则添加前缀
+                            String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                            authorities.add(new SimpleGrantedAuthority(authority));
                         }
                         
                         // 设置认证信息到SecurityContext
@@ -107,6 +122,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                     username, null, authorities);
                             SecurityContextHolder.getContext().setAuthentication(authToken);
+                            
+                            // 设置租户信息到TenantContext
+                            // 这里的username实际上是appId
+                            Tenant tenant = tenantService.getByAppId(username);
+                            if (tenant != null) {
+                                logger.debug("设置租户信息到TenantContext: appId={}, tenantId={}", username, tenant.getId());
+                                TenantContext.setAppId(username);
+                                TenantContext.setTenantId(tenant.getId());
+                            }
                         }
                     }
                 } else {

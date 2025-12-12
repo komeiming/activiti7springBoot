@@ -52,7 +52,7 @@ public class EmployeeOnboardServiceImpl implements EmployeeOnboardService {
     public String deployProcess() {
         // 部署BPMN文件
         Deployment deployment = repositoryService.createDeployment()
-                .addClasspathResource("processes/employee-onboard.bpmn20.xml")
+                .addClasspathResource("processes/employee-onboard.bpmn")
                 .name("员工入职流程")
                 .key("employeeOnboard")
                 .deploy();
@@ -237,7 +237,7 @@ public class EmployeeOnboardServiceImpl implements EmployeeOnboardService {
     public String deployOnboardProcess() {
         // 部署员工入职流程BPMN文件
         Deployment deployment = repositoryService.createDeployment()
-                .addClasspathResource("processes/employee-onboard.bpmn20.xml")
+                .addClasspathResource("processes/employee-onboard.bpmn")
                 .name("员工入职流程")
                 .key("employeeOnboard")
                 .deploy();
