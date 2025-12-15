@@ -358,7 +358,7 @@ public class PublicWorkflowController {
     // ================ 流程定义管理接口 ================
     
     /**
-     * 获取流程定义列表
+     * 获取流程定义列表（租户隔离）
      */
     @GetMapping("/process/definition")
     public Result<Map<String, Object>> getProcessDefinitions(
@@ -371,8 +371,19 @@ public class PublicWorkflowController {
             logger.info("查询流程定义请求, key: {}, name: {}, status: {}, page: {}, size: {}",
                     key, name, status, page, size);
             
-            // 调用服务层获取流程定义列表
-            Map<String, Object> result = processDefinitionService.getProcessDefinitionsByPage(page, size);
+            // 获取当前租户ID
+            String tenantId = TenantContext.getTenantId();
+            logger.info("当前租户ID: {}", tenantId);
+            
+            Map<String, Object> result;
+            if (tenantId != null && !tenantId.trim().isEmpty()) {
+                // 有租户ID时，查询该租户的流程定义
+                result = ((com.itheima.activiti.service.impl.ProcessDefinitionServiceImpl) processDefinitionService)
+                        .getProcessDefinitionsByTenantAndPage(tenantId, page, size);
+            } else {
+                // 无租户ID时，查询所有流程定义
+                result = processDefinitionService.getProcessDefinitionsByPage(page, size);
+            }
             
             return Result.success(result);
         } catch (Exception e) {
@@ -382,7 +393,7 @@ public class PublicWorkflowController {
     }
     
     /**
-     * 部署流程定义
+     * 部署流程定义（租户隔离）
      */
     @PostMapping("/process/definition/deploy")
     public Result<Map<String, Object>> deployProcess(
@@ -398,14 +409,26 @@ public class PublicWorkflowController {
                 return Result.error("请上传.bpmn或.bpmn20.xml格式的文件");
             }
             
-            // 部署流程
-            Deployment deployment = processDefinitionService.deployProcess(file, deploymentName);
+            // 获取当前租户ID
+            String tenantId = TenantContext.getTenantId();
+            logger.info("当前租户ID: {}", tenantId);
+            
+            Deployment deployment;
+            if (tenantId != null && !tenantId.trim().isEmpty()) {
+                // 有租户ID时，使用租户ID部署
+                deployment = ((com.itheima.activiti.service.impl.ProcessDefinitionServiceImpl) processDefinitionService)
+                        .deployProcessWithTenant(file, deploymentName, tenantId);
+            } else {
+                // 无租户ID时，正常部署
+                deployment = processDefinitionService.deployProcess(file, deploymentName);
+            }
             
             // 构建返回结果
             Map<String, Object> result = new HashMap<>();
             result.put("deploymentId", deployment.getId());
             result.put("deploymentName", deployment.getName());
             result.put("deploymentTime", deployment.getDeploymentTime());
+            result.put("tenantId", deployment.getTenantId());
             
             return Result.success("流程部署成功", result);
         } catch (Exception e) {

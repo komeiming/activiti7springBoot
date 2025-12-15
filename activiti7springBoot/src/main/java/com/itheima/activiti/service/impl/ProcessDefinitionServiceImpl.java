@@ -76,6 +76,60 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             throw new RuntimeException("部署流程文件失败", e);
         }
     }
+    
+    /**
+     * 部署流程定义（带租户ID）
+     */
+    public Deployment deployProcessWithTenant(MultipartFile file, String deploymentName, String tenantId) {
+        try {
+            return repositoryService.createDeployment()
+                    .name(deploymentName)
+                    .tenantId(tenantId)
+                    .addInputStream(file.getOriginalFilename(), file.getInputStream())
+                    .deploy();
+        } catch (Exception e) {
+            throw new RuntimeException("部署流程文件失败", e);
+        }
+    }
+    
+    /**
+     * 按租户ID分页获取流程定义列表
+     */
+    public Map<String, Object> getProcessDefinitionsByTenantAndPage(String tenantId, int page, int pageSize) {
+        long total = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionTenantId(tenantId)
+                .latestVersion()
+                .count();
+
+        List<ProcessDefinition> processDefinitions = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionTenantId(tenantId)
+                .latestVersion()
+                .orderByProcessDefinitionName().asc()
+                .listPage((page - 1) * pageSize, pageSize);
+
+        List<Map<String, Object>> processDefinitionMaps = new ArrayList<>();
+        for (ProcessDefinition pd : processDefinitions) {
+            Map<String, Object> pdMap = new HashMap<>();
+            pdMap.put("id", pd.getId());
+            pdMap.put("key", pd.getKey());
+            pdMap.put("name", pd.getName());
+            pdMap.put("version", pd.getVersion());
+            pdMap.put("resourceName", pd.getResourceName());
+            pdMap.put("diagramResourceName", pd.getDiagramResourceName());
+            pdMap.put("deploymentId", pd.getDeploymentId());
+            pdMap.put("suspended", pd.isSuspended());
+            pdMap.put("tenantId", pd.getTenantId());
+            processDefinitionMaps.add(pdMap);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", total);
+        result.put("rows", processDefinitionMaps);
+        result.put("page", page);
+        result.put("pageSize", pageSize);
+
+        return result;
+    }
 
     public Deployment deployProcessFromClassPath(String resourcePath, String deploymentName) {
         return repositoryService.createDeployment()
