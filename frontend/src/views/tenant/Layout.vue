@@ -194,11 +194,11 @@
         </div>
         
         <el-footer class="tenant-footer">
-          <div class="footer-content">
-            <p>© 2025 零售门店业务管理平台 版权所有</p>
-            <p>技术支持：support@example.com</p>
-          </div>
-        </el-footer>
+        <div class="footer-content">
+          <p>© 2025 零售门店业务管理平台 版权所有</p>
+          <p>技术支持：591462485@qq.com</p>
+        </div>
+      </el-footer>
       </el-main>
     </div>
   </div>

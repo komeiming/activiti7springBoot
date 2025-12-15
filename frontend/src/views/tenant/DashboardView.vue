@@ -219,7 +219,7 @@
       >
         <template #default>
           <p>您当前使用的是测试环境，实际生产环境将提供更多功能和更好的性能</p>
-          <p>如有任何问题，请联系技术支持：support@example.com</p>
+          <p>如有任何问题，请联系技术支持：591462485@qq.com</p>
         </template>
       </el-alert>
     </div>

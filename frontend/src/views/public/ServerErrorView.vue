@@ -53,7 +53,7 @@
       
       <div class="help-section">
         <h3>技术支持</h3>
-        <p>联系邮箱：<a href="mailto:support@example.com" class="help-link">support@example.com</a></p>
+        <p>联系邮箱：<a href="mailto:591462485@qq.com" class="help-link">591462485@qq.com</a></p>
         <p>联系电话：<a href="tel:400-123-4567" class="help-link">400-123-4567</a></p>
       </div>
     </div>
