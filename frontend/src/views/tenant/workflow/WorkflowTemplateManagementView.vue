@@ -15,6 +15,9 @@
               <el-button @click="getProcessDefinitions">
                 <el-icon><Refresh /></el-icon> 刷新
               </el-button>
+              <el-button type="warning" @click="goToProcessDesigner">
+                <el-icon><Edit /></el-icon> 流程设计
+              </el-button>
             </div>
           </div>
         </el-card>
@@ -79,6 +82,9 @@
             <div class="filter-left">
               <el-button type="primary" @click="handleCreateTemplate">
                 <el-icon><Plus /></el-icon> 创建流程模板
+              </el-button>
+              <el-button type="warning" @click="goToProcessDesigner">
+                <el-icon><Edit /></el-icon> 流程设计
               </el-button>
               <el-button type="danger" @click="handleBatchDelete" :disabled="selectedTemplates.length === 0">
                 <el-icon><Delete /></el-icon> 批量删除
@@ -330,12 +336,16 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Plus, Delete, Search, Edit, Check, Close, View, Upload, UploadFilled, Picture, Refresh 
 } from '@element-plus/icons-vue'
 import axios from '@/utils/axiosConfig'
 import ProcessFlowChart from '@/components/ProcessFlowChart.vue'
+
+// 路由实例
+const router = useRouter()
 
 // Tab切换
 const activeTab = ref('deployed')
@@ -462,7 +472,12 @@ const getTemplates = async () => {
   }
 }
 
-// 组件挂载时获取数据
+// 跳转到流程设计器页面
+const goToProcessDesigner = () => {
+  router.push('/tenant/workflow/designer')
+}
+
+// 组件初始化
 onMounted(() => {
   if (activeTab.value === 'deployed') {
     getProcessDefinitions()

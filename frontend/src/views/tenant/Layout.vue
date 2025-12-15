@@ -142,6 +142,7 @@
                 <span>工作流模块</span>
               </template>
               <el-menu-item index="/tenant/workflow/templates">流程模板管理</el-menu-item>
+              <el-menu-item index="/tenant/workflow/designer">流程设计</el-menu-item>
               <el-menu-item index="/tenant/workflow/instances">流程实例管理</el-menu-item>
               <el-menu-item index="/tenant/workflow/logs">执行日志</el-menu-item>
               <el-menu-item index="/tenant/workflow/config">工作流配置</el-menu-item>
@@ -236,6 +237,7 @@ const pageTitle = computed(() => {
     '/tenant/notification/logs': '发送日志',
     '/tenant/notification/config': '通知配置',
     '/tenant/workflow/templates': '流程模板管理',
+    '/tenant/workflow/designer': '流程设计',
     '/tenant/workflow/instances': '流程实例管理',
     '/tenant/workflow/logs': '执行日志',
     '/tenant/workflow/config': '工作流配置',
@@ -260,6 +262,7 @@ const breadcrumb = computed(() => {
     '/tenant/notification/logs': [{ name: '通知模块', path: '/tenant/notification/templates' }, { name: '发送日志', path: '/tenant/notification/logs' }],
     '/tenant/notification/config': [{ name: '通知模块', path: '/tenant/notification/templates' }, { name: '通知配置', path: '/tenant/notification/config' }],
     '/tenant/workflow/templates': [{ name: '工作流模块', path: '/tenant/workflow/templates' }, { name: '流程模板管理', path: '/tenant/workflow/templates' }],
+    '/tenant/workflow/designer': [{ name: '工作流模块', path: '/tenant/workflow/templates' }, { name: '流程设计', path: '/tenant/workflow/designer' }],
     '/tenant/workflow/instances': [{ name: '工作流模块', path: '/tenant/workflow/templates' }, { name: '流程实例管理', path: '/tenant/workflow/instances' }],
     '/tenant/workflow/logs': [{ name: '工作流模块', path: '/tenant/workflow/templates' }, { name: '执行日志', path: '/tenant/workflow/logs' }],
     '/tenant/workflow/config': [{ name: '工作流模块', path: '/tenant/workflow/templates' }, { name: '工作流配置', path: '/tenant/workflow/config' }],

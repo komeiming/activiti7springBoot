@@ -154,6 +154,13 @@ const routes = [
     component: ProcessDefinitionManagement,
     meta: { requiresAuth: true, title: '流程定义管理' }
   },
+  // 流程设计器页面
+  {
+    path: '/process-designer',
+    name: 'ProcessDesigner',
+    component: () => import('../views/ProcessDesignerView.vue'),
+    meta: { requiresAuth: true, title: '流程设计器' }
+  },
   // 用户管理页面
   {
     path: '/user-management',
@@ -456,6 +463,15 @@ const routes = [
         meta: {
           requiresAuth: true,
           title: '流程模板管理'
+        }
+      },
+      {
+        path: 'workflow/designer',
+        name: 'workflowDesigner',
+        component: () => import('../views/ProcessDesignerView.vue'),
+        meta: {
+          requiresAuth: true,
+          title: '流程设计'
         }
       },
       {

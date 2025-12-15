@@ -6,6 +6,10 @@
           <span>流程定义管理</span>
           <div class="header-actions">
             <el-button type="primary" @click="openDeployDialog">部署流程</el-button>
+            <el-button type="success" @click="goToProcessDesigner">
+              <el-icon><Edit /></el-icon>
+              流程设计
+            </el-button>
           </div>
         </div>
       </template>
@@ -241,16 +245,21 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 import ProcessDefinitionService from '../services/ProcessDefinitionService'
 import UserService from '../services/UserService'
 import ProcessFlowChart from '../components/ProcessFlowChart.vue'
+import { Edit } from '@element-plus/icons-vue'
 
 export default {
   name: 'UserProcessDefinitionManagement',
   components: {
-    ProcessFlowChart
+    ProcessFlowChart,
+    Edit
   },
   setup() {
+    const router = useRouter()
+    
     // 响应式数据
     const loading = ref(false)
     const deployDialogVisible = ref(false)
@@ -715,6 +724,11 @@ export default {
       console.info('生成的流程连线数据:', processLinks.value)
     }
     
+    // 跳转到流程设计器页面
+    const goToProcessDesigner = () => {
+      router.push('/process-designer')
+    }
+    
     // 流程节点和连线数据已在顶部声明
 
     // 初始化
@@ -739,6 +753,7 @@ export default {
       pagination,
       processNodes,
       processLinks,
+      goToProcessDesigner,
       handleSearch,
       resetSearch,
       handleSizeChange,

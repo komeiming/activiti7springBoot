@@ -80,6 +80,11 @@ app.config.warnHandler = (msg, instance, trace) => {
 
 // 设置全局未捕获错误处理器
 window.addEventListener('error', (event) => {
+  // 忽略ResizeObserver循环错误，这是浏览器级别的警告，不会影响功能
+  if (event.message === 'ResizeObserver loop completed with undelivered notifications.') {
+    return;
+  }
+  
   logger('error', 'App', '未捕获的JavaScript错误:', {
     message: event.message,
     filename: event.filename,

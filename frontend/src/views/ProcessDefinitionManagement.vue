@@ -9,6 +9,10 @@
               <el-icon><Upload /></el-icon>
               部署流程
             </el-button>
+            <el-button type="success" @click="goToProcessDesigner">
+              <el-icon><Edit /></el-icon>
+              流程设计
+            </el-button>
           </div>
         </div>
       </template>
@@ -169,7 +173,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
-import { Upload, Operation, Check, Close, Delete, UploadFilled } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+import { Upload, Operation, Check, Close, Delete, UploadFilled, Edit } from '@element-plus/icons-vue'
 
 export default {
   name: 'ProcessDefinitionManagement',
@@ -179,10 +184,12 @@ export default {
     Check,
     Close,
     Delete,
-    UploadFilled
+    UploadFilled,
+    Edit
   },
   setup() {
     // 响应式数据
+    const router = useRouter()
     const processDefinitions = ref([])
     const showDeployDialog = ref(false)
     const showStartDialog = ref(false)
@@ -498,6 +505,11 @@ export default {
       getProcessDefinitions()
     }
     
+    // 跳转到流程设计器页面
+    const goToProcessDesigner = () => {
+      router.push('/process-designer')
+    }
+    
     // 初始化
     onMounted(() => {
       getProcessDefinitions()
@@ -530,7 +542,8 @@ export default {
       handleSearch,
       resetSearch,
       handleSizeChange,
-      handleCurrentChange
+      handleCurrentChange,
+      goToProcessDesigner
     }
   }
 }
