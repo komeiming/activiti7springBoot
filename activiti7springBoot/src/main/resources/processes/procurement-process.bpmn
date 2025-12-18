@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:activiti="http://activiti.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://www.activiti.org/test">
+
+  <process id="procurement-process" name="采购申请流程" isExecutable="true">
+    <!-- 启动事件 -->
+    <startEvent id="startEvent" name="开始" />
+    
+    <!-- 提交采购申请任务 -->
+    <userTask id="submitProcurement" name="提交采购申请" activiti:assignee="${applicant}">
+      <extensionElements>
+        <activiti:formProperty id="procurementDate" name="申请日期" type="date" required="true" />
+        <activiti:formProperty id="itemName" name="采购物品名称" type="string" required="true" />
+        <activiti:formProperty id="quantity" name="采购数量" type="integer" required="true" />
+        <activiti:formProperty id="unitPrice" name="单价" type="double" required="true" />
+        <activiti:formProperty id="totalAmount" name="总金额" type="double" required="true" />
+        <activiti:formProperty id="currency" name="货币类型" type="enum" enumValues="CNY,USD,EUR" required="true" />
+        <activiti:formProperty id="procurementType" name="采购类型" type="enum" enumValues="办公用品,IT设备,软件许可,服务采购,其他" required="true" />
+        <activiti:formProperty id="purpose" name="采购用途" type="string" required="true" />
+        <activiti:formProperty id="urgency" name="紧急程度" type="enum" enumValues="普通,紧急,特急" required="true" />
+        <activiti:formProperty id="supplierName" name="供应商名称" type="string" />
+        <activiti:formProperty id="projectId" name="项目ID" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 部门经理审批任务 -->
+    <userTask id="managerApproval" name="部门经理审批" activiti:assignee="${manager}">
+      <extensionElements>
+        <activiti:formProperty id="approved" name="是否同意" type="boolean" required="true" />
+        <activiti:formProperty id="comment" name="审批意见" type="string" />
+        <activiti:formProperty id="budgetChecked" name="预算已审核" type="boolean" required="true" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 网关判断 -->
+    <exclusiveGateway id="managerDecision" name="经理审批决策" />
+    
+    <!-- 金额判断网关 -->
+    <exclusiveGateway id="amountDecision" name="金额判断" />
+    
+    <!-- 采购部门审核任务 -->
+    <userTask id="procurementApproval" name="采购部门审核" activiti:assignee="procurement">
+      <extensionElements>
+        <activiti:formProperty id="procurementApproved" name="采购部门是否同意" type="boolean" required="true" />
+        <activiti:formProperty id="procurementComment" name="采购部门审核意见" type="string" />
+        <activiti:formProperty id="supplierValidated" name="供应商已验证" type="boolean" required="true" />
+        <activiti:formProperty id="deliveryTime" name="预计交付时间" type="date" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 财务总监审批任务 -->
+    <userTask id="cfoApproval" name="财务总监审批" activiti:assignee="cfo">
+      <extensionElements>
+        <activiti:formProperty id="cfoApproved" name="财务总监是否同意" type="boolean" required="true" />
+        <activiti:formProperty id="cfoComment" name="财务总监审批意见" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 财务审批任务 -->
+    <userTask id="financeApproval" name="财务审批" activiti:assignee="finance">
+      <extensionElements>
+        <activiti:formProperty id="financeApproved" name="财务是否同意" type="boolean" required="true" />
+        <activiti:formProperty id="financeComment" name="财务审批意见" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 最终审批网关 -->
+    <exclusiveGateway id="finalDecision" name="最终决策" />
+    
+    <!-- 审批拒绝任务 -->
+    <userTask id="rejectNotification" name="拒绝通知" activiti:assignee="${applicant}">
+      <extensionElements>
+        <activiti:formProperty id="notificationRead" name="通知已读" type="boolean" required="true" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 采购执行任务 -->
+    <userTask id="executeProcurement" name="采购执行" activiti:assignee="procurement">
+      <extensionElements>
+        <activiti:formProperty id="purchaseOrderNumber" name="采购订单号" type="string" required="true" />
+        <activiti:formProperty id="actualSupplier" name="实际供应商" type="string" required="true" />
+        <activiti:formProperty id="actualAmount" name="实际金额" type="double" required="true" />
+        <activiti:formProperty id="purchaseCompleted" name="采购已完成" type="boolean" required="true" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 收货确认任务 -->
+    <userTask id="receiveGoods" name="收货确认" activiti:assignee="${applicant}">
+      <extensionElements>
+        <activiti:formProperty id="received" name="是否收到货物" type="boolean" required="true" />
+        <activiti:formProperty id="receivedDate" name="收货日期" type="date" />
+        <activiti:formProperty id="qualitySatisfactory" name="质量是否满意" type="boolean" required="true" />
+        <activiti:formProperty id="comment" name="收货备注" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 结束事件 -->
+    <endEvent id="endEvent" name="结束" />
+    
+    <!-- 顺序流连接 -->
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="submitProcurement" />
+    <sequenceFlow id="flow2" sourceRef="submitProcurement" targetRef="managerApproval" />
+    <sequenceFlow id="flow3" sourceRef="managerApproval" targetRef="managerDecision" />
+    
+    <!-- 经理审批拒绝 -->
+    <sequenceFlow id="flow4" sourceRef="managerDecision" targetRef="rejectNotification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == false}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 经理审批通过，进入金额判断 -->
+    <sequenceFlow id="flow5" sourceRef="managerDecision" targetRef="amountDecision">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == true}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 金额大于5000，需要财务总监审批 -->
+    <sequenceFlow id="flow6" sourceRef="amountDecision" targetRef="cfoApproval">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${totalAmount > 5000}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 金额小于等于5000，直接采购部门审核 -->
+    <sequenceFlow id="flow7" sourceRef="amountDecision" targetRef="procurementApproval">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${totalAmount <= 5000}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 财务总监审批通过 -->
+    <sequenceFlow id="flow8" sourceRef="cfoApproval" targetRef="procurementApproval">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${cfoApproved == true}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 财务总监审批拒绝 -->
+    <sequenceFlow id="flow9" sourceRef="cfoApproval" targetRef="rejectNotification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${cfoApproved == false}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 采购部门审核完成，进入财务审批 -->
+    <sequenceFlow id="flow10" sourceRef="procurementApproval" targetRef="financeApproval" />
+    
+    <!-- 财务审批完成，进入最终决策 -->
+    <sequenceFlow id="flow11" sourceRef="financeApproval" targetRef="finalDecision" />
+    
+    <!-- 财务审批通过，进入采购执行 -->
+    <sequenceFlow id="flow12" sourceRef="finalDecision" targetRef="executeProcurement">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${financeApproved == true}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 财务审批拒绝 -->
+    <sequenceFlow id="flow13" sourceRef="finalDecision" targetRef="rejectNotification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${financeApproved == false}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 采购执行完成，进入收货确认 -->
+    <sequenceFlow id="flow14" sourceRef="executeProcurement" targetRef="receiveGoods" />
+    
+    <!-- 结束流程 -->
+    <sequenceFlow id="flow15" sourceRef="receiveGoods" targetRef="endEvent" />
+    <sequenceFlow id="flow16" sourceRef="rejectNotification" targetRef="endEvent" />
+  </process>
+  
+  <!-- 图形信息 -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_procurement-process">
+    <bpmndi:BPMNPlane bpmnElement="procurement-process" id="BPMNPlane_procurement-process">
+      <bpmndi:BPMNShape bpmnElement="startEvent" id="BPMNShape_startEvent">
+        <omgdc:Bounds height="36.0" width="36.0" x="100.0" y="200.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="submitProcurement" id="BPMNShape_submitProcurement">
+        <omgdc:Bounds height="80.0" width="160.0" x="200.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="managerApproval" id="BPMNShape_managerApproval">
+        <omgdc:Bounds height="80.0" width="140.0" x="410.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="managerDecision" id="BPMNShape_managerDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="590.0" y="198.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="amountDecision" id="BPMNShape_amountDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="690.0" y="198.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="procurementApproval" id="BPMNShape_procurementApproval">
+        <omgdc:Bounds height="80.0" width="140.0" x="790.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="cfoApproval" id="BPMNShape_cfoApproval">
+        <omgdc:Bounds height="80.0" width="120.0" x="790.0" y="70.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="financeApproval" id="BPMNShape_financeApproval">
+        <omgdc:Bounds height="80.0" width="120.0" x="980.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="finalDecision" id="BPMNShape_finalDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="1150.0" y="198.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="executeProcurement" id="BPMNShape_executeProcurement">
+        <omgdc:Bounds height="80.0" width="140.0" x="1250.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="receiveGoods" id="BPMNShape_receiveGoods">
+        <omgdc:Bounds height="80.0" width="120.0" x="1440.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="rejectNotification" id="BPMNShape_rejectNotification">
+        <omgdc:Bounds height="80.0" width="120.0" x="1250.0" y="310.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endEvent" id="BPMNShape_endEvent">
+        <omgdc:Bounds height="36.0" width="36.0" x="1610.0" y="206.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="136.0" y="218.0" />
+        <omgdi:waypoint x="200.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="360.0" y="218.0" />
+        <omgdi:waypoint x="410.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+        <omgdi:waypoint x="550.0" y="218.0" />
+        <omgdi:waypoint x="590.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
+        <omgdi:waypoint x="610.0" y="238.0" />
+        <omgdi:waypoint x="610.0" y="350.0" />
+        <omgdi:waypoint x="1250.0" y="350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="610.0" y="218.0" />
+        <omgdi:waypoint x="690.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="710.0" y="198.0" />
+        <omgdi:waypoint x="710.0" y="110.0" />
+        <omgdi:waypoint x="790.0" y="110.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="710.0" y="218.0" />
+        <omgdi:waypoint x="790.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="910.0" y="110.0" />
+        <omgdi:waypoint x="910.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+        <omgdi:waypoint x="790.0" y="110.0" />
+        <omgdi:waypoint x="610.0" y="110.0" />
+        <omgdi:waypoint x="610.0" y="350.0" />
+        <omgdi:waypoint x="1250.0" y="350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="930.0" y="218.0" />
+        <omgdi:waypoint x="980.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="1100.0" y="218.0" />
+        <omgdi:waypoint x="1150.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow12" id="BPMNEdge_flow12">
+        <omgdi:waypoint x="1170.0" y="218.0" />
+        <omgdi:waypoint x="1250.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13">
+        <omgdi:waypoint x="1170.0" y="238.0" />
+        <omgdi:waypoint x="1170.0" y="350.0" />
+        <omgdi:waypoint x="1250.0" y="350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow14" id="BPMNEdge_flow14">
+        <omgdi:waypoint x="1390.0" y="218.0" />
+        <omgdi:waypoint x="1440.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow15" id="BPMNEdge_flow15">
+        <omgdi:waypoint x="1560.0" y="218.0" />
+        <omgdi:waypoint x="1610.0" y="224.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow16" id="BPMNEdge_flow16">
+        <omgdi:waypoint x="1370.0" y="350.0" />
+        <omgdi:waypoint x="1610.0" y="254.0" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

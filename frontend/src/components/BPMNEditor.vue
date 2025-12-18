@@ -136,7 +136,7 @@
 <script>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import axios from '@/utils/axiosConfig'
 
 // 引入BPMN.js相关模块
 import BpmnModeler from 'bpmn-js/lib/Modeler'
@@ -402,6 +402,7 @@ export default {
         let res
         if (tenantStr) {
           // 租户环境下，使用租户隔离的API
+          console.log('租户环境，调用API获取流程定义列表')
           res = await axios.get('/api/v1/workflow/process/definition', {
             params: {
               page: 1,
@@ -409,22 +410,40 @@ export default {
             }
           })
           // 处理租户API返回的数据格式
+          console.log('API返回结果:', res)
           if (res && res.rows) {
             processList.value = res.rows || []
+            console.log('处理后流程列表:', processList.value)
+          } else {
+            processList.value = []
+            console.log('无法找到流程列表数据')
           }
         } else {
-          // 非租户环境下，使用原有API
+          // 非租户环境下，使用原有API（系统管理员）
+          console.log('非租户环境，调用API获取流程定义列表')
           res = await axios.get('/api/process/definition/list', {
             params: {
               page: 1,
               pageSize: 100
             }
           })
-          if (res.data && res.data.success) {
-            processList.value = res.data.rows || []
+          // 处理非租户API返回的数据格式
+          console.log('API返回结果:', res)
+          if (res) {
+            if (res.success) {
+              processList.value = res.rows || []
+              console.log('处理后流程列表:', processList.value)
+            } else {
+              processList.value = []
+              console.log('API返回失败:', res.message)
+            }
+          } else {
+            processList.value = []
+            console.log('无法找到流程列表数据')
           }
         }
       } catch (error) {
+        console.error('获取流程列表失败:', error)
         ElMessage.error('获取流程列表失败: ' + error.message)
       }
     }
@@ -443,12 +462,29 @@ export default {
       }
 
       try {
-        // 获取流程XML
-        const res = await axios.get(`/api/process/definition/xml/${selectedProcess.value.deploymentId}`)
-        if (res.data && res.data.success) {
-          const bpmnXml = res.data.bpmnXml
+        // 检查是否是租户环境
+        const tenantStr = localStorage.getItem('tenantInfo')
+        let res
+        let bpmnXml
+        
+        if (tenantStr) {
+          // 租户环境下，使用租户隔离的API
+          res = await axios.get(`/api/v1/workflow/process/definition/xml/${selectedProcess.value.deploymentId}`)
+          // 响应拦截器会处理success字段，直接使用res.bpmnXml
+          bpmnXml = res.bpmnXml
+        } else {
+          // 非租户环境下，使用原有API
+          res = await axios.get(`/api/process/definition/xml/${selectedProcess.value.deploymentId}`)
+          if (res && res.success) {
+            bpmnXml = res.bpmnXml
+          }
+        }
+        
+        if (bpmnXml) {
           renderDiagram(bpmnXml)
           showProcessListDialog.value = false
+        } else {
+          ElMessage.error('获取流程XML失败: 未找到BPMN XML数据')
         }
       } catch (error) {
         ElMessage.error('获取流程XML失败: ' + error.message)
@@ -534,9 +570,13 @@ export default {
         const tenantStr = localStorage.getItem('tenantInfo')
         
         if (tenantStr) {
-          // 租户环境下，这里可以添加保存到租户流程模板的逻辑
-          // 目前租户环境下暂不支持直接保存，提示用户部署流程
-          ElMessage.info('租户环境下请直接部署流程，部署后会自动保存')
+          // 租户环境下，调用租户流程保存API
+          await axios.post('/api/v1/workflow/process/definition/save', {
+            name: processName.value,
+            key: processKey.value,
+            xml: xml
+          })
+          ElMessage.success('流程保存成功')
         } else {
           // 非租户环境下，使用原有API
           await axios.post('/api/process/definition/save', {
@@ -589,11 +629,11 @@ export default {
           formData.append('file', new Blob([xml], { type: 'application/xml' }), `${processKey.value}.bpmn`)
 
           const res = await axios.post('/api/process/definition/deploy', formData)
-          if (res.data.success) {
+          if (res.success) {
             ElMessage.success('流程部署成功')
             showDeployDialog.value = false
           } else {
-            ElMessage.error('流程部署失败: ' + (res.data.message || '未知错误'))
+            ElMessage.error('流程部署失败: ' + (res.message || '未知错误'))
           }
         }
       } catch (error) {

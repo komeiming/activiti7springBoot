@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:activiti="http://activiti.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://www.activiti.org/test">
+
+  <process id="employee-probation" name="员工转正流程" isExecutable="true">
+    <!-- 启动事件 -->
+    <startEvent id="startEvent" name="开始" />
+    
+    <!-- 员工提交转正申请 -->
+    <userTask id="submitProbation" name="提交转正申请" activiti:assignee="${employeeId}">
+      <extensionElements>
+        <activiti:formProperty id="applicationDate" name="申请日期" type="date" required="true" />
+        <activiti:formProperty id="hireDate" name="入职日期" type="date" required="true" />
+        <activiti:formProperty id="probationPeriod" name="试用期时长" type="enum" enumValues="3个月,6个月,12个月" required="true" />
+        <activiti:formProperty id="position" name="当前职位" type="string" required="true" />
+        <activiti:formProperty id="department" name="所属部门" type="string" required="true" />
+        <activiti:formProperty id="workSummary" name="试用期工作总结" type="string" required="true" />
+        <activiti:formProperty id="achievements" name="主要工作成果" type="string" required="true" />
+        <activiti:formProperty id="skillImprovement" name="技能提升情况" type="string" />
+        <activiti:formProperty id="futurePlans" name="未来工作计划" type="string" />
+        <activiti:formProperty id="requestedSalary" name="期望薪资" type="double" />
+        <activiti:formProperty id="additionalInfo" name="补充说明" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 直接主管评估 -->
+    <userTask id="managerEvaluation" name="直接主管评估" activiti:assignee="${directManager}">
+      <extensionElements>
+        <activiti:formProperty id="workQuality" name="工作质量评分" type="enum" enumValues="优秀,良好,一般,较差" required="true" />
+        <activiti:formProperty id="workAttitude" name="工作态度评分" type="enum" enumValues="优秀,良好,一般,较差" required="true" />
+        <activiti:formProperty id="teamwork" name="团队协作评分" type="enum" enumValues="优秀,良好,一般,较差" required="true" />
+        <activiti:formProperty id="skillLevel" name="技能水平评分" type="enum" enumValues="优秀,良好,一般,较差" required="true" />
+        <activiti:formProperty id="recommendRegular" name="是否推荐转正" type="boolean" required="true" />
+        <activiti:formProperty id="managerComment" name="主管评估意见" type="string" required="true" />
+        <activiti:formProperty id="suggestedSalary" name="建议薪资" type="double" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 部门经理审批 -->
+    <userTask id="departmentManagerApproval" name="部门经理审批" activiti:assignee="${departmentManager}">
+      <extensionElements>
+        <activiti:formProperty id="approved" name="是否同意" type="boolean" required="true" />
+        <activiti:formProperty id="departmentComment" name="部门经理意见" type="string" />
+        <activiti:formProperty id="salaryApproved" name="薪资已批准" type="boolean" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 网关判断 -->
+    <exclusiveGateway id="departmentDecision" name="部门经理决策" />
+    
+    <!-- HR审批 -->
+    <userTask id="hrApproval" name="HR审批" activiti:assignee="hr">
+      <extensionElements>
+        <activiti:formProperty id="hrApproved" name="HR是否同意" type="boolean" required="true" />
+        <activiti:formProperty id="hrComment" name="HR意见" type="string" />
+        <activiti:formProperty id="salaryFinal" name="最终薪资" type="double" required="true" />
+        <activiti:formProperty id="regularDate" name="转正日期" type="date" required="true" />
+        <activiti:formProperty id="contractUpdated" name="合同已更新" type="boolean" required="true" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 最终审批网关 -->
+    <exclusiveGateway id="hrDecision" name="HR审批决策" />
+    
+    <!-- 转正批准通知 -->
+    <userTask id="approvalNotification" name="转正批准通知" activiti:assignee="${employeeId}">
+      <extensionElements>
+        <activiti:formProperty id="notificationRead" name="通知已读" type="boolean" required="true" />
+        <activiti:formProperty id="comment" name="员工确认" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 转正拒绝通知 -->
+    <userTask id="rejectNotification" name="转正拒绝通知" activiti:assignee="${employeeId}">
+      <extensionElements>
+        <activiti:formProperty id="notificationRead" name="通知已读" type="boolean" required="true" />
+        <activiti:formProperty id="feedback" name="员工反馈" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 结束事件 -->
+    <endEvent id="endEvent" name="结束" />
+    
+    <!-- 顺序流连接 -->
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="submitProbation" />
+    <sequenceFlow id="flow2" sourceRef="submitProbation" targetRef="managerEvaluation" />
+    <sequenceFlow id="flow3" sourceRef="managerEvaluation" targetRef="departmentManagerApproval" />
+    <sequenceFlow id="flow4" sourceRef="departmentManagerApproval" targetRef="departmentDecision" />
+    
+    <!-- 部门经理审批拒绝 -->
+    <sequenceFlow id="flow5" sourceRef="departmentDecision" targetRef="rejectNotification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == false}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 部门经理审批通过 -->
+    <sequenceFlow id="flow6" sourceRef="departmentDecision" targetRef="hrApproval">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == true}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- HR审批完成 -->
+    <sequenceFlow id="flow7" sourceRef="hrApproval" targetRef="hrDecision" />
+    
+    <!-- HR审批拒绝 -->
+    <sequenceFlow id="flow8" sourceRef="hrDecision" targetRef="rejectNotification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${hrApproved == false}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- HR审批通过 -->
+    <sequenceFlow id="flow9" sourceRef="hrDecision" targetRef="approvalNotification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${hrApproved == true}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 结束流程 -->
+    <sequenceFlow id="flow10" sourceRef="approvalNotification" targetRef="endEvent" />
+    <sequenceFlow id="flow11" sourceRef="rejectNotification" targetRef="endEvent" />
+  </process>
+  
+  <!-- 图形信息 -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_employee-probation">
+    <bpmndi:BPMNPlane bpmnElement="employee-probation" id="BPMNPlane_employee-probation">
+      <bpmndi:BPMNShape bpmnElement="startEvent" id="BPMNShape_startEvent">
+        <omgdc:Bounds height="36.0" width="36.0" x="100.0" y="200.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="submitProbation" id="BPMNShape_submitProbation">
+        <omgdc:Bounds height="80.0" width="150.0" x="200.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="managerEvaluation" id="BPMNShape_managerEvaluation">
+        <omgdc:Bounds height="80.0" width="140.0" x="390.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="departmentManagerApproval" id="BPMNShape_departmentManagerApproval">
+        <omgdc:Bounds height="80.0" width="140.0" x="580.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="departmentDecision" id="BPMNShape_departmentDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="760.0" y="198.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="hrApproval" id="BPMNShape_hrApproval">
+        <omgdc:Bounds height="80.0" width="120.0" x="860.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="hrDecision" id="BPMNShape_hrDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="1020.0" y="198.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="approvalNotification" id="BPMNShape_approvalNotification">
+        <omgdc:Bounds height="80.0" width="140.0" x="1120.0" y="120.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="rejectNotification" id="BPMNShape_rejectNotification">
+        <omgdc:Bounds height="80.0" width="140.0" x="1120.0" y="260.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endEvent" id="BPMNShape_endEvent">
+        <omgdc:Bounds height="36.0" width="36.0" x="1310.0" y="198.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="136.0" y="218.0" />
+        <omgdi:waypoint x="200.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="350.0" y="218.0" />
+        <omgdi:waypoint x="390.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+        <omgdi:waypoint x="530.0" y="218.0" />
+        <omgdi:waypoint x="580.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
+        <omgdi:waypoint x="720.0" y="218.0" />
+        <omgdi:waypoint x="760.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="780.0" y="238.0" />
+        <omgdi:waypoint x="780.0" y="300.0" />
+        <omgdi:waypoint x="1120.0" y="300.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="780.0" y="218.0" />
+        <omgdi:waypoint x="860.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="980.0" y="218.0" />
+        <omgdi:waypoint x="1020.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="1040.0" y="238.0" />
+        <omgdi:waypoint x="1040.0" y="300.0" />
+        <omgdi:waypoint x="1120.0" y="300.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+        <omgdi:waypoint x="1040.0" y="198.0" />
+        <omgdi:waypoint x="1040.0" y="160.0" />
+        <omgdi:waypoint x="1120.0" y="160.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="1260.0" y="160.0" />
+        <omgdi:waypoint x="1310.0" y="216.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="1260.0" y="300.0" />
+        <omgdi:waypoint x="1310.0" y="234.0" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:activiti="http://activiti.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://www.activiti.org/test">
+
+  <process id="employee-resignation" name="员工离职流程" isExecutable="true">
+    <!-- 启动事件 -->
+    <startEvent id="startEvent" name="开始" />
+    
+    <!-- 员工提交离职申请 -->
+    <userTask id="submitResignation" name="提交离职申请" activiti:assignee="${employeeId}">
+      <extensionElements>
+        <activiti:formProperty id="applicationDate" name="申请日期" type="date" required="true" />
+        <activiti:formProperty id="lastWorkingDay" name="期望最后工作日" type="date" required="true" />
+        <activiti:formProperty id="resignationReason" name="离职原因" type="enum" enumValues="个人原因,家庭原因,职业发展,薪资原因,工作环境,其他" required="true" />
+        <activiti:formProperty id="detailedReason" name="详细原因说明" type="string" required="true" />
+        <activiti:formProperty id="position" name="当前职位" type="string" required="true" />
+        <activiti:formProperty id="department" name="所属部门" type="string" required="true" />
+        <activiti:formProperty id="hireDate" name="入职日期" type="date" required="true" />
+        <activiti:formProperty id="noticePeriod" name="通知期时长" type="string" />
+        <activiti:formProperty id="hasHandoverPlan" name="是否有交接计划" type="boolean" required="true" />
+        <activiti:formProperty id="handoverDetails" name="工作交接计划" type="string" />
+        <activiti:formProperty id="exitInterviewWilling" name="是否愿意参加离职面谈" type="boolean" required="true" />
+        <activiti:formProperty id="additionalInfo" name="补充说明" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 直接主管审批 -->
+    <userTask id="managerApproval" name="直接主管审批" activiti:assignee="${directManager}">
+      <extensionElements>
+        <activiti:formProperty id="approved" name="是否同意" type="boolean" required="true" />
+        <activiti:formProperty id="comment" name="审批意见" type="string" />
+        <activiti:formProperty id="handoverApproved" name="交接计划已认可" type="boolean" />
+        <activiti:formProperty id="proposedLastDay" name="建议最后工作日" type="date" />
+        <activiti:formProperty id="retentionConsidered" name="是否考虑挽留" type="boolean" />
+        <activiti:formProperty id="retentionPlan" name="挽留方案" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 部门经理审批 -->
+    <userTask id="departmentManagerApproval" name="部门经理审批" activiti:assignee="${departmentManager}">
+      <extensionElements>
+        <activiti:formProperty id="approved" name="是否同意" type="boolean" required="true" />
+        <activiti:formProperty id="departmentComment" name="部门经理意见" type="string" />
+        <activiti:formProperty id="knowledgeTransferApproved" name="知识转移计划已认可" type="boolean" required="true" />
+        <activiti:formProperty id="finalLastWorkingDay" name="最终确定最后工作日" type="date" required="true" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 网关判断 -->
+    <exclusiveGateway id="departmentDecision" name="部门经理决策" />
+    
+    <!-- HR处理 -->
+    <userTask id="hrProcessing" name="HR处理" activiti:assignee="hr">
+      <extensionElements>
+        <activiti:formProperty id="exitInterviewScheduled" name="离职面谈已安排" type="boolean" required="true" />
+        <activiti:formProperty id="exitInterviewDate" name="离职面谈日期" type="date" />
+        <activiti:formProperty id="exitInterviewer" name="面谈人" type="string" />
+        <activiti:formProperty id="documentChecklistCreated" name="文档清单已创建" type="boolean" required="true" />
+        <activiti:formProperty id="assetChecklistCreated" name="资产清单已创建" type="boolean" required="true" />
+        <activiti:formProperty id="salarySettlementCalculated" name="薪资结算已计算" type="boolean" required="true" />
+        <activiti:formProperty id="finalSettlementAmount" name="最终结算金额" type="double" />
+        <activiti:formProperty id="salaryPaymentDate" name="薪资支付日期" type="date" />
+        <activiti:formProperty id="hrComment" name="HR处理意见" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 离职面谈 -->
+    <userTask id="exitInterview" name="离职面谈" activiti:assignee="${exitInterviewer}">
+      <extensionElements>
+        <activiti:formProperty id="interviewCompleted" name="面谈已完成" type="boolean" required="true" />
+        <activiti:formProperty id="interviewDate" name="面谈日期" type="date" required="true" />
+        <activiti:formProperty id="interviewContent" name="面谈内容摘要" type="string" required="true" />
+        <activiti:formProperty id="feedback" name="对公司的反馈" type="string" />
+        <activiti:formProperty id="recommendations" name="改进建议" type="string" />
+        <activiti:formProperty id="retentionAttempt" name="是否尝试挽留" type="boolean" required="true" />
+        <activiti:formProperty id="retentionResult" name="挽留结果" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 工作交接 -->
+    <userTask id="workHandover" name="工作交接" activiti:assignee="${employeeId}">
+      <extensionElements>
+        <activiti:formProperty id="handoverCompleted" name="交接已完成" type="boolean" required="true" />
+        <activiti:formProperty id="handoverDate" name="交接日期" type="date" required="true" />
+        <activiti:formProperty id="handoverTo" name="交接对象" type="string" required="true" />
+        <activiti:formProperty id="documentsHanded" name="文档已交接" type="boolean" required="true" />
+        <activiti:formProperty id="assetsHanded" name="资产已归还" type="boolean" required="true" />
+        <activiti:formProperty id="systemAccessRevoked" name="系统访问权限已撤销" type="boolean" required="true" />
+        <activiti:formProperty id="handoverDetails" name="详细交接内容" type="string" required="true" />
+        <activiti:formProperty id="handoverAcceptorComment" name="交接接收人意见" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 最终确认 -->
+    <userTask id="finalConfirmation" name="最终确认" activiti:assignee="hr">
+      <extensionElements>
+        <activiti:formProperty id="finalApproval" name="最终批准" type="boolean" required="true" />
+        <activiti:formProperty id="allDocumentsReceived" name="所有文档已接收" type="boolean" required="true" />
+        <activiti:formProperty id="allAssetsReturned" name="所有资产已归还" type="boolean" required="true" />
+        <activiti:formProperty id="allAccessRevoked" name="所有访问权限已撤销" type="boolean" required="true" />
+        <activiti:formProperty id="resignationProcessCompleted" name="离职流程已完成" type="boolean" required="true" />
+        <activiti:formProperty id="finalComment" name="最终处理意见" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 拒绝通知 -->
+    <userTask id="rejectNotification" name="拒绝通知" activiti:assignee="${employeeId}">
+      <extensionElements>
+        <activiti:formProperty id="notificationRead" name="通知已读" type="boolean" required="true" />
+        <activiti:formProperty id="employeeFeedback" name="员工反馈" type="string" />
+      </extensionElements>
+    </userTask>
+    
+    <!-- 结束事件 -->
+    <endEvent id="endEvent" name="结束" />
+    
+    <!-- 顺序流连接 -->
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="submitResignation" />
+    <sequenceFlow id="flow2" sourceRef="submitResignation" targetRef="managerApproval" />
+    <sequenceFlow id="flow3" sourceRef="managerApproval" targetRef="departmentManagerApproval" />
+    <sequenceFlow id="flow4" sourceRef="departmentManagerApproval" targetRef="departmentDecision" />
+    
+    <!-- 部门经理审批拒绝 -->
+    <sequenceFlow id="flow5" sourceRef="departmentDecision" targetRef="rejectNotification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == false}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- 部门经理审批通过 -->
+    <sequenceFlow id="flow6" sourceRef="departmentDecision" targetRef="hrProcessing">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == true}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <!-- HR处理完成 -->
+    <sequenceFlow id="flow7" sourceRef="hrProcessing" targetRef="exitInterview" />
+    
+    <!-- 离职面谈完成 -->
+    <sequenceFlow id="flow8" sourceRef="exitInterview" targetRef="workHandover" />
+    
+    <!-- 工作交接完成 -->
+    <sequenceFlow id="flow9" sourceRef="workHandover" targetRef="finalConfirmation" />
+    
+    <!-- 结束流程 -->
+    <sequenceFlow id="flow10" sourceRef="finalConfirmation" targetRef="endEvent" />
+    <sequenceFlow id="flow11" sourceRef="rejectNotification" targetRef="endEvent" />
+  </process>
+  
+  <!-- 图形信息 -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_employee-resignation">
+    <bpmndi:BPMNPlane bpmnElement="employee-resignation" id="BPMNPlane_employee-resignation">
+      <bpmndi:BPMNShape bpmnElement="startEvent" id="BPMNShape_startEvent">
+        <omgdc:Bounds height="36.0" width="36.0" x="100.0" y="200.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="submitResignation" id="BPMNShape_submitResignation">
+        <omgdc:Bounds height="80.0" width="160.0" x="200.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="managerApproval" id="BPMNShape_managerApproval">
+        <omgdc:Bounds height="80.0" width="140.0" x="410.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="departmentManagerApproval" id="BPMNShape_departmentManagerApproval">
+        <omgdc:Bounds height="80.0" width="140.0" x="590.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="departmentDecision" id="BPMNShape_departmentDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="770.0" y="198.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="hrProcessing" id="BPMNShape_hrProcessing">
+        <omgdc:Bounds height="80.0" width="120.0" x="870.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exitInterview" id="BPMNShape_exitInterview">
+        <omgdc:Bounds height="80.0" width="120.0" x="1030.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="workHandover" id="BPMNShape_workHandover">
+        <omgdc:Bounds height="80.0" width="120.0" x="1190.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="finalConfirmation" id="BPMNShape_finalConfirmation">
+        <omgdc:Bounds height="80.0" width="120.0" x="1350.0" y="178.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="rejectNotification" id="BPMNShape_rejectNotification">
+        <omgdc:Bounds height="80.0" width="140.0" x="1030.0" y="310.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endEvent" id="BPMNShape_endEvent">
+        <omgdc:Bounds height="36.0" width="36.0" x="1520.0" y="206.0" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="136.0" y="218.0" />
+        <omgdi:waypoint x="200.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="360.0" y="218.0" />
+        <omgdi:waypoint x="410.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+        <omgdi:waypoint x="550.0" y="218.0" />
+        <omgdi:waypoint x="590.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
+        <omgdi:waypoint x="730.0" y="218.0" />
+        <omgdi:waypoint x="770.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="790.0" y="238.0" />
+        <omgdi:waypoint x="790.0" y="350.0" />
+        <omgdi:waypoint x="1030.0" y="350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="790.0" y="218.0" />
+        <omgdi:waypoint x="870.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="990.0" y="218.0" />
+        <omgdi:waypoint x="1030.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="1150.0" y="218.0" />
+        <omgdi:waypoint x="1190.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+        <omgdi:waypoint x="1310.0" y="218.0" />
+        <omgdi:waypoint x="1350.0" y="218.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="1470.0" y="218.0" />
+        <omgdi:waypoint x="1520.0" y="224.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="1170.0" y="350.0" />
+        <omgdi:waypoint x="1520.0" y="254.0" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

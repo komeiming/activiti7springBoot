@@ -312,6 +312,77 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             throw new RuntimeException("读取流程模型文件失败", e);
         }
     }
+    
+    public String getProcessModelXMLByDeploymentId(String deploymentId) {
+        try {
+            // 根据部署ID获取流程定义
+            ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
+                    .deploymentId(deploymentId)
+                    .singleResult();
+            
+            if (processDefinition == null) {
+                throw new RuntimeException("未找到该部署下的流程定义");
+            }
+            
+            // 获取流程资源名称
+            String resourceName = processDefinition.getResourceName();
+            
+            // 获取流程XML
+            InputStream inputStream = repositoryService.getResourceAsStream(deploymentId, resourceName);
+            
+            if (inputStream == null) {
+                throw new RuntimeException("未找到流程模型文件");
+            }
+            
+            byte[] bytes = new byte[inputStream.available()];
+            inputStream.read(bytes);
+            inputStream.close();
+            return new String(bytes);
+        } catch (Exception e) {
+            throw new RuntimeException("读取流程模型文件失败", e);
+        }
+    }
+    
+    public void saveProcessXML(String name, String key, String xml) {
+        try {
+            // 在Activiti中，流程定义是通过部署来保存的
+            // 使用流程名称和当前时间生成唯一的部署名称
+            String deploymentName = name + "_" + System.currentTimeMillis();
+            // 使用流程标识生成文件名
+            String fileName = key + ".bpmn";
+            
+            // 部署流程定义到Activiti引擎中
+            repositoryService.createDeployment()
+                    .name(deploymentName)
+                    .addString(fileName, xml)
+                    .deploy();
+            
+            System.out.println("保存流程XML成功: " + name + " (" + key + ")");
+        } catch (Exception e) {
+            throw new RuntimeException("保存流程XML失败", e);
+        }
+    }
+    
+    public void saveProcessXML(String name, String key, String xml, String tenantId) {
+        try {
+            // 在Activiti中，流程定义是通过部署来保存的
+            // 使用流程名称和当前时间生成唯一的部署名称
+            String deploymentName = name + "_" + System.currentTimeMillis();
+            // 使用流程标识生成文件名
+            String fileName = key + ".bpmn";
+            
+            // 部署流程定义到Activiti引擎中，设置租户ID
+            repositoryService.createDeployment()
+                    .name(deploymentName)
+                    .addString(fileName, xml)
+                    .tenantId(tenantId)
+                    .deploy();
+            
+            System.out.println("保存租户流程XML成功: " + name + " (" + key + "), tenantId: " + tenantId);
+        } catch (Exception e) {
+            throw new RuntimeException("保存租户流程XML失败", e);
+        }
+    }
 
     // 确保这个方法是正确的重写方法
     public String startProcessInstance(String processDefinitionKey, String businessKey, Map<String, Object> variables) {

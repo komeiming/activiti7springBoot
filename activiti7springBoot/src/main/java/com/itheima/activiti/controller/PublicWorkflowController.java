@@ -529,6 +529,114 @@ public class PublicWorkflowController {
     }
     
     /**
+     * 获取流程定义XML（租户隔离）
+     */
+    @GetMapping("/process/definition/{id}/xml")
+    public Result<Map<String, Object>> getProcessDefinitionXML(@PathVariable String id) {
+        try {
+            logger.info("获取流程XML请求, id: {}", id);
+            
+            // 获取当前租户ID
+            String tenantId = TenantContext.getTenantId();
+            logger.info("当前租户ID: {}", tenantId);
+            
+            // 获取流程XML
+            String xml = processDefinitionService.getProcessModelXML(id);
+            
+            // 验证流程定义的租户ID
+            ProcessDefinition processDefinition = processDefinitionService.getProcessDefinitionById(id);
+            if (processDefinition != null && tenantId != null && !tenantId.trim().isEmpty()) {
+                if (!tenantId.equals(processDefinition.getTenantId())) {
+                    return Result.error("无权限访问该流程定义");
+                }
+            }
+            
+            // 构建返回结果
+            Map<String, Object> result = new HashMap<>();
+            result.put("xml", xml);
+            result.put("processDefinitionId", id);
+            
+            return Result.success("获取流程XML成功", result);
+        } catch (Exception e) {
+            logger.error("获取流程XML失败:", e);
+            return Result.error("获取流程XML失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 根据部署ID获取流程XML（租户隔离）
+     */
+    @GetMapping("/process/definition/xml/{deploymentId}")
+    public Result<Map<String, Object>> getProcessDefinitionXMLByDeploymentId(@PathVariable String deploymentId) {
+        try {
+            logger.info("根据部署ID获取流程XML请求, deploymentId: {}", deploymentId);
+            
+            // 获取流程XML
+            String xml = ((com.itheima.activiti.service.impl.ProcessDefinitionServiceImpl) processDefinitionService)
+                    .getProcessModelXMLByDeploymentId(deploymentId);
+            
+            // 构建返回结果
+            Map<String, Object> result = new HashMap<>();
+            result.put("bpmnXml", xml);
+            result.put("deploymentId", deploymentId);
+            
+            return Result.success("获取流程XML成功", result);
+        } catch (Exception e) {
+            logger.error("获取流程XML失败:", e);
+            return Result.error("获取流程XML失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 保存流程XML（租户隔离）
+     */
+    @PostMapping("/process/definition/save")
+    public Result<Map<String, Object>> saveProcessDefinitionXML(@RequestBody Map<String, Object> request) {
+        try {
+            logger.info("保存流程XML请求: {}", request);
+            
+            // 获取当前租户ID
+            String tenantId = TenantContext.getTenantId();
+            logger.info("当前租户ID: {}", tenantId);
+            
+            if (tenantId == null || tenantId.trim().isEmpty()) {
+                return Result.error("租户ID不能为空");
+            }
+            
+            // 从请求中获取参数
+            String name = (String) request.get("name");
+            String key = (String) request.get("key");
+            String xml = (String) request.get("xml");
+            
+            // 验证必填参数
+            if (name == null || name.trim().isEmpty()) {
+                return Result.error("流程名称不能为空");
+            }
+            if (key == null || key.trim().isEmpty()) {
+                return Result.error("流程标识不能为空");
+            }
+            if (xml == null || xml.trim().isEmpty()) {
+                return Result.error("流程XML不能为空");
+            }
+            
+            // 调用服务层保存流程XML，传递租户ID参数
+            ((com.itheima.activiti.service.impl.ProcessDefinitionServiceImpl) processDefinitionService)
+                    .saveProcessXML(name, key, xml, tenantId);
+            
+            // 构建返回结果
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", "流程保存成功");
+            result.put("processName", name);
+            result.put("processKey", key);
+            
+            return Result.success("保存流程XML成功", result);
+        } catch (Exception e) {
+            logger.error("保存流程XML失败:", e);
+            return Result.error("保存流程XML失败: " + e.getMessage());
+        }
+    }
+    
+    /**
      * 查询流程实例状态
      */
     @GetMapping("/instance/status")

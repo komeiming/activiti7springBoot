@@ -267,6 +267,40 @@ public class ProcessDefinitionController {
                 "xml", xml
         ));
     }
+    
+    /**
+     * 根据部署ID获取流程XML
+     */
+    @GetMapping("/xml/{deploymentId}")
+    public ResponseEntity<Map<String, Object>> getProcessModelXMLByDeploymentId(
+            @PathVariable String deploymentId) {
+        
+        String xml = processDefinitionService.getProcessModelXMLByDeploymentId(deploymentId);
+        
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "bpmnXml", xml
+        ));
+    }
+    
+    /**
+     * 保存流程XML
+     */
+    @PostMapping("/save")
+    public ResponseEntity<Map<String, Object>> saveProcessXML(
+            @RequestBody Map<String, Object> request) {
+        
+        String name = (String) request.get("name");
+        String key = (String) request.get("key");
+        String xml = (String) request.get("xml");
+        
+        processDefinitionService.saveProcessXML(name, key, xml);
+        
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "流程保存成功"
+        ));
+    }
 
     /**
      * 启动流程实例

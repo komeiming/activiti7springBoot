@@ -116,6 +116,23 @@ public interface ProcessDefinitionService {
      * @return XML内容
      */
     String getProcessModelXML(String processDefinitionId);
+    
+    /**
+     * 根据部署ID获取流程XML
+     * @param deploymentId 部署ID
+     * @return XML内容
+     */
+    String getProcessModelXMLByDeploymentId(String deploymentId);
+    
+    /**
+     * 保存流程XML
+     * @param name 流程名称
+     * @param key 流程标识
+     * @param xml 流程XML
+     */
+    void saveProcessXML(String name, String key, String xml);
+    
+    void saveProcessXML(String name, String key, String xml, String tenantId);
 
     /**
      * 启动流程实例
